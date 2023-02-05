@@ -2,11 +2,11 @@
 
 Masonry is a framework that aims to provide the foundation for Rust GUI libraries.
 
-Masonry gives you a platform to create windows (using Glazier as a backend) each with a tree of widgets. It also gives you tools to inspect that widget tree at runtime, write unit tests on it, and generally have an easier time debugging and maintaining your app.
+Masonry gives you a platform to create windows (using [Glazier](https://github.com/linebender/glazier) as a backend) each with a tree of widgets. It also gives you tools to inspect that widget tree at runtime, write unit tests on it, and generally have an easier time debugging and maintaining your app.
 
 The framework is not opinionated about what your user-facing abstraction will be: you can implement immediate-mode GUI, the Elm architecture, functional reactive GUI, etc, on top of Masonry.
 
-This project was originally was originally a fork of Druid that emerged from discussions I had with Raph Levien and Colin Rofls about what it would look like to turn Druid into a foundational library.
+This project was originally a fork of [Druid](https://github.com/linebender/druid) that emerged from discussions I had with Raph Levien and Colin Rofls about what it would look like to turn Druid into a foundational library.
 
 ## Installing
 
@@ -98,6 +98,15 @@ This simplicity makes Masonry somewhat painful if you want to use it to actually
 (Well, in theory. The first stress-test will be porting [Panoramix](https://github.com/PoignardAzur/panoramix), a React-style GUI in Rust, to Masonry.)
 
 
+## Widget Inspector
+
+Masonry provides a UI for inspecting the Widget tree, inspired by browser devtools. It's still rudimentary for now, the hope being to eventually provide best-in-class tools for debugging all of your UI.
+
+[TODO screenshot]
+
+In the current inspector, you can see the Widget hierarchy, move your mouse around on the screen and select the matching Widget in the hierarchy, and get (very basic) information about the widget.
+
+
 ## Unit tests
 
 Masonry is designed to make unit tests easy to write, as if the test function were a mouse-and-keyboard user. Tests look like this:
@@ -152,7 +161,7 @@ The immediate next steps are:
 
 - [ ] Rework Widget trait (#26)
 
-- [ ] Port Panoramix to Masonry
-- [ ] Port Xilem to Masonry
+- [ ] Port [Panoramix](https://github.com/PoignardAzur/panoramix) to Masonry
+- [ ] Port [Xilem](https://github.com/linebender/xilem) to Masonry
 
 See [ROADMAP.md](./ROADMAP.md) and [the issues page](https://github.com/PoignardAzur/masonry-rs/issues) for more.
