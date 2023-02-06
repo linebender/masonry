@@ -283,13 +283,13 @@ impl<T: TextStorage + EditableText> TextComponentMut<'_, '_, T> {
             self.widget
                 .borrow_mut()
                 .update_pending_invalidation(ImeInvalidation::Reset);
-            self.state.request_layout();
+            self.ctx.request_layout();
         }
     }
 
     pub fn set_focused(&mut self, focused: bool) {
         self.widget.has_focus = focused;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 }
 

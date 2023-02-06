@@ -301,7 +301,7 @@ impl<'a, 'b> SplitMut<'a, 'b> {
             "split_point must be in the range [0.0-1.0]!"
         );
         self.widget.split_point_chosen = split_point;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the minimum size for both sides of the split axis.
@@ -312,7 +312,7 @@ impl<'a, 'b> SplitMut<'a, 'b> {
         assert!(first >= 0.0);
         assert!(second >= 0.0);
         self.widget.min_size = (first.ceil(), second.ceil());
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the size of the splitter bar.
@@ -323,7 +323,7 @@ impl<'a, 'b> SplitMut<'a, 'b> {
     pub fn set_bar_size(&mut self, bar_size: f64) {
         assert!(bar_size >= 0.0, "bar_size must be 0.0 or greater!");
         self.widget.bar_size = bar_size.ceil();
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the minimum size of the splitter bar area.
@@ -341,13 +341,13 @@ impl<'a, 'b> SplitMut<'a, 'b> {
     pub fn set_min_bar_area(&mut self, min_bar_area: f64) {
         assert!(min_bar_area >= 0.0, "min_bar_area must be 0.0 or greater!");
         self.widget.min_bar_area = min_bar_area.ceil();
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set whether the split point can be changed by dragging.
     pub fn set_draggable(&mut self, draggable: bool) {
         self.widget.draggable = draggable;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Set whether the splitter bar is drawn as a solid rectangle.
@@ -355,7 +355,7 @@ impl<'a, 'b> SplitMut<'a, 'b> {
     /// If this is `false` (the default), the bar will be drawn as two parallel lines.
     pub fn set_bar_solid(&mut self, solid: bool) {
         self.widget.solid = solid;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 }
 

@@ -45,7 +45,7 @@ impl Checkbox {
 impl<'a, 'b> CheckboxMut<'a, 'b> {
     pub fn set_checked(&mut self, checked: bool) {
         self.widget.checked = checked;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Set the text.
@@ -54,7 +54,7 @@ impl<'a, 'b> CheckboxMut<'a, 'b> {
     }
 
     pub fn label_mut(&mut self) -> WidgetMut<'_, 'b, Label> {
-        self.state.get_mut(&mut self.widget.label)
+        self.ctx.get_mut(&mut self.widget.label)
     }
 }
 

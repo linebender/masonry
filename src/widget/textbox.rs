@@ -313,7 +313,7 @@ impl TextBox {
 
 impl<'a, 'b> TextBoxMut<'a, 'b> {
     pub fn inner_mut(&mut self) -> WidgetMut<'_, 'b, Portal<TextComponent<Arc<String>>>> {
-        self.state.get_mut(&mut self.widget.inner)
+        self.ctx.get_mut(&mut self.widget.inner)
     }
 
     pub fn set_text(&mut self, new_text: impl Into<String>) {

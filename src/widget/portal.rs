@@ -153,15 +153,15 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
     where
         W: StoreInWidgetMut,
     {
-        self.state.get_mut(&mut self.widget.child)
+        self.ctx.get_mut(&mut self.widget.child)
     }
 
     pub fn horizontal_scrollbar_mut(&mut self) -> WidgetMut<'_, 'b, ScrollBar> {
-        self.state.get_mut(&mut self.widget.scrollbar_horizontal)
+        self.ctx.get_mut(&mut self.widget.scrollbar_horizontal)
     }
 
     pub fn vertical_scrollbar_mut(&mut self) -> WidgetMut<'_, 'b, ScrollBar> {
-        self.state.get_mut(&mut self.widget.scrollbar_vertical)
+        self.ctx.get_mut(&mut self.widget.scrollbar_vertical)
     }
 
     // TODO - rewrite doc
@@ -172,7 +172,7 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
     /// [`constrain_vertical`]: struct.ClipBox.html#constrain_vertical
     pub fn set_constrain_horizontal(&mut self, constrain: bool) {
         self.widget.constrain_horizontal = constrain;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set whether to constrain the child vertically.
@@ -182,7 +182,7 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
     /// [`constrain_vertical`]: struct.ClipBox.html#constrain_vertical
     pub fn set_constrain_vertical(&mut self, constrain: bool) {
         self.widget.constrain_vertical = constrain;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set whether the child's size must be greater than or equal the size of
@@ -193,11 +193,11 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
     /// [`content_must_fill`]: ClipBox::content_must_fill
     pub fn set_content_must_fill(&mut self, must_fill: bool) {
         self.widget.must_fill = must_fill;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     pub fn set_viewport_pos(&mut self, position: Point) -> bool {
-        let portal_size = self.state.widget_state.layout_rect().size();
+        let portal_size = self.ctx.widget_state.layout_rect().size();
         let content_size = self.widget.child.layout_rect().size();
 
         let pos_changed = self
@@ -210,7 +210,7 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
             let progress_y = self.widget.viewport_pos.y / (content_size - portal_size).height;
             self.vertical_scrollbar_mut()
                 .set_cursor_progress(progress_y);
-            self.state.request_layout();
+            self.ctx.request_layout();
         }
         pos_changed
     }
@@ -221,8 +221,7 @@ impl<'a, 'b, W: Widget> PortalMut<'a, 'b, W> {
 
     // Note - Rect is in child coordinates
     pub fn pan_viewport_to(&mut self, target: Rect) -> bool {
-        let viewport =
-            Rect::from_origin_size(self.widget.viewport_pos, self.state.widget_state.size);
+        let viewport = Rect::from_origin_size(self.widget.viewport_pos, self.ctx.widget_state.size);
 
         let new_pos_x = compute_pan_range(
             viewport.min_x()..viewport.max_x(),

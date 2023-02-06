@@ -111,18 +111,18 @@ impl ScrollBarMut<'_, '_> {
     pub fn set_sizes(&mut self, portal_size: f64, content_size: f64) {
         self.widget.portal_size = portal_size;
         self.widget.content_size = content_size;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     pub fn set_content_size(&mut self, content_size: f64) {
         // TODO - cursor_progress
         self.widget.content_size = content_size;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     pub fn set_cursor_progress(&mut self, cursor_progress: f64) {
         self.widget.cursor_progress = cursor_progress;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 }
 

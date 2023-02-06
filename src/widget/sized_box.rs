@@ -180,38 +180,38 @@ impl SizedBox {
 impl<'a, 'b> SizedBoxMut<'a, 'b> {
     pub fn set_child(&mut self, child: impl Widget) {
         self.widget.child = Some(WidgetPod::new(child).boxed());
-        self.state.children_changed();
-        self.state.request_layout();
+        self.ctx.children_changed();
+        self.ctx.request_layout();
     }
 
     pub fn remove_child(&mut self) {
         self.widget.child = None;
-        self.state.children_changed();
-        self.state.request_layout();
+        self.ctx.children_changed();
+        self.ctx.request_layout();
     }
 
     /// Set container's width.
     pub fn set_width(&mut self, width: f64) {
         self.widget.width = Some(width);
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set container's height.
     pub fn set_height(&mut self, height: f64) {
         self.widget.height = Some(height);
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set container's width.
     pub fn unset_width(&mut self) {
         self.widget.width = None;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set container's height.
     pub fn unset_height(&mut self) {
         self.widget.height = None;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the background for this widget.
@@ -221,13 +221,13 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
     /// any gradient, or a fully custom painter `FnMut`.
     pub fn set_background(&mut self, brush: impl Into<BackgroundBrush>) {
         self.widget.background = Some(brush.into());
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Clears background.
     pub fn clear_background(&mut self) {
         self.widget.background = None;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Paint a border around the widget with a color and width.
@@ -243,25 +243,25 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
             color: color.into(),
             width: width.into(),
         });
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Clears border.
     pub fn clear_border(&mut self) {
         self.widget.border = None;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Round off corners of this container by setting a corner radius
     pub fn set_rounded(&mut self, radius: impl Into<KeyOrValue<RoundedRectRadii>>) {
         self.widget.corner_radius = radius.into();
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     // TODO - Doc
     pub fn child_mut(&mut self) -> Option<WidgetMut<'_, 'b, Box<dyn Widget>>> {
         let child = self.widget.child.as_mut()?;
-        Some(self.state.get_mut(child))
+        Some(self.ctx.get_mut(child))
     }
 }
 

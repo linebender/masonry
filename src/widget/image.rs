@@ -74,14 +74,14 @@ impl<'a, 'b> ImageMut<'a, 'b> {
     #[inline]
     pub fn set_fill_mode(&mut self, newfil: FillStrat) {
         self.widget.fill = newfil;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Modify the widget's interpolation mode.
     #[inline]
     pub fn set_interpolation_mode(&mut self, interpolation: InterpolationMode) {
         self.widget.interpolation = interpolation;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Set the area of the image that will be displayed.
@@ -90,7 +90,7 @@ impl<'a, 'b> ImageMut<'a, 'b> {
     #[inline]
     pub fn set_clip_area(&mut self, clip_area: Option<Rect>) {
         self.widget.clip_area = clip_area;
-        self.state.request_paint();
+        self.ctx.request_paint();
     }
 
     /// Set new `ImageBuf`.
@@ -98,7 +98,7 @@ impl<'a, 'b> ImageMut<'a, 'b> {
     pub fn set_image_data(&mut self, image_data: ImageBuf) {
         self.widget.image_data = image_data;
         self.widget.paint_data = None;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 }
 

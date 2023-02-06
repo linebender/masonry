@@ -155,7 +155,7 @@ impl LabelMut<'_, '_> {
     /// Set the text.
     pub fn set_text(&mut self, new_text: impl Into<ArcStr>) {
         self.widget.text_layout.set_text(new_text.into());
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the text color.
@@ -168,7 +168,7 @@ impl LabelMut<'_, '_> {
             self.widget.text_layout.set_text_color(color.clone());
         }
         self.widget.default_text_color = color;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the text size.
@@ -178,7 +178,7 @@ impl LabelMut<'_, '_> {
     /// [`Key<f64>`]: ../struct.Key.html
     pub fn set_text_size(&mut self, size: impl Into<KeyOrValue<f64>>) {
         self.widget.text_layout.set_text_size(size);
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the font.
@@ -189,19 +189,19 @@ impl LabelMut<'_, '_> {
     /// [`Key<FontDescriptor>`]: ../struct.Key.html
     pub fn set_font(&mut self, font: impl Into<KeyOrValue<FontDescriptor>>) {
         self.widget.text_layout.set_font(font);
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the [`LineBreaking`] behaviour.
     pub fn set_line_break_mode(&mut self, mode: LineBreaking) {
         self.widget.line_break_mode = mode;
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 
     /// Set the [`TextAlignment`] for this layout.
     pub fn set_text_alignment(&mut self, alignment: TextAlignment) {
         self.widget.text_layout.set_text_alignment(alignment);
-        self.state.request_layout();
+        self.ctx.request_layout();
     }
 }
 
