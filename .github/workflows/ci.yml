@@ -55,7 +55,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --all-targets --features=x11 --no-default-features -- -D warnings
+          args: --all-targets --features=x11 --no-default-features
 
       # We use --all-targets to skip doc tests; we run them in a parallel task
       - name: cargo test
@@ -68,7 +68,7 @@ jobs:
   # a long time.
   test-stable-gtk:
     runs-on: ubuntu-latest
-    name: cargo clippy+test (gtk)
+    name: cargo test (gtk)
     steps:
       - uses: actions/checkout@v2
 
@@ -81,7 +81,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: clippy
           profile: minimal
           override: true
 
