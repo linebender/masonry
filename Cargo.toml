@@ -21,8 +21,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 default-target = "x86_64-pc-windows-msvc"
 
 [features]
-default = ["gtk", "png", "jpeg"]
+default = ["gtk", "image", "png", "jpeg"]
 gtk = ["druid-shell/gtk"]
+image = ["druid-shell/image"]
 svg = ["usvg"]
 x11 = ["druid-shell/x11"]
 serde_deps = ["im/serde", "druid-shell/serde"]
@@ -45,7 +46,7 @@ dxt = ["druid-shell/dxt"]
 hdr = ["druid-shell/hdr"]
 
 # Remember to update this when changing an image feature.
-image-all = ["svg", "png", "jpeg", "jpeg_rayon", "gif", "bmp", "ico", "tiff", "webp", "pnm", "dds", "tga", "farbfeld", "dxt", "hdr"]
+image-all = ["image", "svg", "png", "jpeg", "jpeg_rayon", "gif", "bmp", "ico", "tiff", "webp", "pnm", "dds", "tga", "farbfeld", "dxt", "hdr"]
 
 [dependencies]
 druid-shell = { version = "0.8.0", default-features = false }
@@ -92,4 +93,8 @@ open = "1.6"
 
 [[example]]
 name = "simple_image"
+required-features = ["png"]
+
+[[example]]
+name = "simple_web_image"
 required-features = ["png"]

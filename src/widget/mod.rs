@@ -26,7 +26,6 @@ mod sized_box;
 mod spinner;
 mod split;
 mod textbox;
-mod web_image;
 
 pub use align::Align;
 pub use button::Button;
@@ -39,7 +38,6 @@ pub use sized_box::SizedBox;
 pub use spinner::Spinner;
 pub use split::Split;
 pub use textbox::TextBox;
-pub use web_image::WebImage;
 pub use widget::StoreInWidgetMut;
 #[doc(hidden)]
 pub use widget::{Widget, WidgetId};
@@ -50,6 +48,12 @@ pub use widget_mut::WidgetMut;
 pub use widget_pod::WidgetPod;
 pub use widget_ref::WidgetRef;
 pub use widget_state::WidgetState;
+
+// TODO - Figure out dependency stuff.
+#[cfg(feature = "image")]
+mod web_image;
+#[cfg(feature = "image")]
+pub use web_image::WebImage;
 
 pub use self::image::Image;
 
