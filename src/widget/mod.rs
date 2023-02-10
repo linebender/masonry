@@ -49,12 +49,6 @@ pub use widget_pod::WidgetPod;
 pub use widget_ref::WidgetRef;
 pub use widget_state::WidgetState;
 
-// TODO - Figure out dependency stuff.
-#[cfg(feature = "image")]
-mod web_image;
-#[cfg(feature = "image")]
-pub use web_image::WebImage;
-
 pub use self::image::Image;
 
 pub use sized_box::BackgroundBrush;
