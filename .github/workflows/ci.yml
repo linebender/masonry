@@ -88,7 +88,7 @@ jobs:
           override: true
 
       - name: restore cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       # We use --all-targets to skip doc tests; there are no gtk-specific
       # doctests in masonry anyway
@@ -119,7 +119,7 @@ jobs:
           override: true
 
       - name: restore cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       # We use --all-targets to skip doc tests; there are no wasm-specific
       # doctests in masonry anyway
@@ -144,7 +144,7 @@ jobs:
           override: true
 
       - name: restore cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       - name: cargo test --doc
         uses: actions-rs/cargo@v1
@@ -172,7 +172,7 @@ jobs:
           override: true
 
       - name: restore cache
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       - name: cargo check
         uses: actions-rs/cargo@v1
