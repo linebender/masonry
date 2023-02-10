@@ -93,8 +93,8 @@ open = "1.6"
 
 [[example]]
 name = "simple_image"
-required-features = ["png"]
+required-features = ["image", "png"]
 
 [[example]]
 name = "simple_web_image"
-required-features = ["png"]
+required-features = ["image", "png"]

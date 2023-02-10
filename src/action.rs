@@ -28,6 +28,7 @@ pub enum Action {
 impl PartialEq for Action {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (Self::ButtonPressed, Self::ButtonPressed) => true,
             (Self::TextChanged(l0), Self::TextChanged(r0)) => l0 == r0,
             (Self::TextEntered(l0), Self::TextEntered(r0)) => l0 == r0,
             (Self::CheckboxChecked(l0), Self::CheckboxChecked(r0)) => l0 == r0,

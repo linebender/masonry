@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn debug_empty_token() {
         let promise_token: PromiseToken<i32> = PromiseToken::empty();
-        println!("token: {:?}", promise_token);
+        dbg!(promise_token);
     }
 
     #[test]
