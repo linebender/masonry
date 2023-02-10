@@ -214,7 +214,7 @@ impl AppRoot {
         // If there are no active or pending windows, we quit the run loop.
         if inner.active_windows.is_empty() && inner.pending_windows.is_empty() {
             #[cfg(any(target_os = "windows", feature = "x11"))]
-            inner.app.quit();
+            inner.app_handle.quit();
         }
 
         // If we are closing the window that is currently responsible
