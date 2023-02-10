@@ -4,6 +4,9 @@ on:
       - master
   pull_request:
 
+env:
+  SKIP_RENDER_SNAPSHOTS: 1
+
 jobs:
   rustfmt:
     runs-on: ubuntu-latest

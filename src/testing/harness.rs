@@ -545,6 +545,14 @@ impl TestHarness {
         test_module_path: &str,
         test_name: &str,
     ) {
+        if option_env!("SKIP_RENDER_SNAPSHOTS").is_some() {
+            // FIXME - This is a terrible, awful hack.
+            // We need a way to skip render snapshots on CI and locally
+            // until we can make sure the snapshots render the same on
+            // different platforms.
+            return;
+        }
+
         let mut device = Device::new().expect("harness failed to get device");
         let mut render_target = device
             .bitmap_target(
