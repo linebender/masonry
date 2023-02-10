@@ -1582,6 +1582,7 @@ dependencies = [
  "instant",
  "once_cell",
  "open",
+ "piet-common",
  "pulldown-cmark",
  "reqwest",
  "serde",
