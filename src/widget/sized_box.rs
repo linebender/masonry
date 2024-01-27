@@ -50,7 +50,8 @@ struct BorderStyle {
 /// and width as possible given the parent's constraints. If height or width is not set,
 /// it will be treated as zero.
 pub struct SizedBox {
-    child: Option<WidgetPod<Box<dyn Widget>>>,
+    pub(crate) child: Option<WidgetPod<Box<dyn Widget>>>,
+    visible: bool,
     width: Option<f64>,
     height: Option<f64>,
     background: Option<BackgroundBrush>,
@@ -64,6 +65,7 @@ impl SizedBox {
     pub fn new(child: impl Widget) -> Self {
         Self {
             child: Some(WidgetPod::new(child).boxed()),
+            visible: true,
             width: None,
             height: None,
             background: None,
@@ -76,6 +78,7 @@ impl SizedBox {
     pub fn new_with_id(child: impl Widget, id: WidgetId) -> Self {
         Self {
             child: Some(WidgetPod::new_with_id(child, id).boxed()),
+            visible: true,
             width: None,
             height: None,
             background: None,
@@ -92,6 +95,7 @@ impl SizedBox {
     pub fn empty() -> Self {
         Self {
             child: None,
+            visible: true,
             width: None,
             height: None,
             background: None,
@@ -187,6 +191,15 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
     pub fn remove_child(&mut self) {
         self.widget.child = None;
         self.ctx.children_changed();
+        self.ctx.request_layout();
+    }
+
+    /// Set container's visibility.
+    pub fn set_visible(&mut self, visible: bool) {
+        self.widget.visible = visible;
+        if let Some(child) = self.widget.child.as_mut() {
+            self.ctx.set_stashed(child, !visible);
+        }
         self.ctx.request_layout();
     }
 
@@ -326,12 +339,16 @@ impl Widget for SizedBox {
         let mut size;
         match self.child.as_mut() {
             Some(child) => {
-                size = child.layout(ctx, &child_bc, env);
-                ctx.place_child(child, origin, env);
-                size = Size::new(
-                    size.width + 2.0 * border_width,
-                    size.height + 2.0 * border_width,
-                );
+                if self.visible {
+                    size = child.layout(ctx, &child_bc, env);
+                    ctx.place_child(child, origin, env);
+                    size = Size::new(
+                        size.width + 2.0 * border_width,
+                        size.height + 2.0 * border_width,
+                    );
+                } else {
+                    size = bc.constrain(Size::ZERO)
+                }
             }
             None => size = bc.constrain((self.width.unwrap_or(0.0), self.height.unwrap_or(0.0))),
         };
@@ -352,6 +369,10 @@ impl Widget for SizedBox {
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, env: &Env) {
+        if !self.visible {
+            return;
+        }
+
         let corner_radius = self.corner_radius.resolve(env);
 
         if let Some(background) = self.background.as_mut() {

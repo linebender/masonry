@@ -8,12 +8,13 @@ use tracing::{info_span, trace, warn};
 
 use crate::contexts::GlobalPassCtx;
 use crate::kurbo::{Affine, Insets, Point, Rect, Shape, Size};
+use crate::mini::reactive::{UpdateWidgetArgs, UPDATE_WIDGET};
 use crate::text::TextLayout;
 use crate::widget::{FocusChange, WidgetRef, WidgetState};
 use crate::{
     ArcStr, BoxConstraints, Color, Env, Event, EventCtx, InternalEvent, InternalLifeCycle,
     LayoutCtx, LifeCycle, LifeCycleCtx, Notification, PaintCtx, RenderContext, StatusChange,
-    Target, Widget, WidgetId,
+    Target, Widget, WidgetCtx, WidgetId,
 };
 
 // TODO - rewrite links in doc
@@ -400,8 +401,23 @@ impl<W: Widget> WidgetPod<W> {
                 InternalEvent::TargetedCommand(cmd) => {
                     match cmd.target() {
                         Target::Widget(id) if id == self.id() => {
-                            modified_event = Some(Event::Command(cmd.clone()));
-                            true
+                            if let Some(updater) = cmd.try_get(UPDATE_WIDGET) {
+                                let updater =
+                                    updater.borrow_mut().take().expect("unable to take updater");
+                                updater(UpdateWidgetArgs {
+                                    type_name: self.inner.type_name(),
+                                    widget: self.inner.as_mut_any(),
+                                    parent_state: parent_ctx.widget_state,
+                                    ctx: WidgetCtx {
+                                        global_state: parent_ctx.global_state,
+                                        widget_state: &mut self.state,
+                                    },
+                                });
+                                false
+                            } else {
+                                modified_event = Some(Event::Command(cmd.clone()));
+                                true
+                            }
                         }
                         Target::Widget(id) => {
                             // Recurse when the target widget could be our descendant.
@@ -965,6 +981,10 @@ impl<W: Widget> WidgetPod<W> {
                         child.deref().short_type_name(),
                         child.state().id.to_raw(),
                     );
+                }
+
+                if child.state().is_stashed {
+                    continue;
                 }
 
                 // TODO - This check might be redundant with the code updating local_paint_rect

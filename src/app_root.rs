@@ -10,6 +10,7 @@
 
 use std::cell::{RefCell, RefMut};
 use std::collections::{HashMap, VecDeque};
+use std::mem;
 use std::ops::DerefMut;
 use std::rc::Rc;
 
@@ -26,7 +27,7 @@ use tracing::{error, info, info_span};
 
 use crate::action::ActionQueue;
 use crate::app_delegate::{AppDelegate, DelegateCtx, NullDelegate};
-use crate::command::CommandQueue;
+use crate::command::{CommandQueue, INSPECT};
 use crate::contexts::GlobalPassCtx;
 use crate::debug_logger::DebugLogger;
 use crate::ext_event::{ExtEventQueue, ExtEventSink, ExtMessage};
@@ -37,9 +38,11 @@ use crate::platform::{
 };
 use crate::testing::MockTimerQueue;
 use crate::text::TextFieldRegistration;
-use crate::widget::{FocusChange, StoreInWidgetMut, WidgetMut, WidgetRef, WidgetState};
+use crate::widget::{
+    FocusChange, Label, SizedBox, StoreInWidgetMut, WidgetMut, WidgetRef, WidgetState,
+};
 use crate::{
-    command as sys_cmd, ArcStr, BoxConstraints, Command, Env, Event, EventCtx, Handled,
+    command as sys_cmd, inspector, ArcStr, BoxConstraints, Command, Env, Event, EventCtx, Handled,
     InternalEvent, InternalLifeCycle, LayoutCtx, LifeCycle, LifeCycleCtx, MasonryWinHandler,
     PaintCtx, PlatformError, Target, Widget, WidgetCtx, WidgetId, WidgetPod, WindowDescription,
     WindowId,
@@ -1028,6 +1031,30 @@ impl WindowRoot {
                 self.last_mouse_pos = Some(e.pos)
             }
             Event::Internal(InternalEvent::MouseLeave) => self.last_mouse_pos = None,
+            Event::Command(cmd) if cmd.is(INSPECT) => {
+                let root =
+                    mem::replace(&mut self.root, WidgetPod::new(Box::new(SizedBox::empty())));
+                let background = if self.transparent {
+                    Color::TRANSPARENT
+                } else {
+                    env.get(crate::theme::WINDOW_BACKGROUND_COLOR)
+                };
+                self.root = WidgetPod::new(Box::new(inspector::inspect(
+                    root,
+                    self.size,
+                    background,
+                    command_queue,
+                    self.id,
+                )));
+                self.lifecycle(
+                    &LifeCycle::Internal(InternalLifeCycle::RouteWidgetAdded),
+                    debug_logger,
+                    command_queue,
+                    action_queue,
+                    env,
+                    false,
+                );
+            }
             _ => (),
         }
 

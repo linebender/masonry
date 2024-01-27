@@ -111,6 +111,8 @@ mod data;
 pub mod env;
 mod event;
 pub mod ext_event;
+mod inspector;
+mod mini;
 mod mouse;
 mod platform;
 pub mod promise;

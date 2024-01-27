@@ -25,7 +25,9 @@ mod scroll_bar;
 mod sized_box;
 mod spinner;
 mod split;
+mod stack;
 mod textbox;
+pub(crate) use stack::Stack;
 
 pub use align::Align;
 pub use button::Button;

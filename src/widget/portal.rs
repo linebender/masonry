@@ -28,6 +28,10 @@ pub struct Portal<W: Widget> {
     // on re-layouts
     // TODO - rename
     viewport_pos: Point,
+
+    // FIXME: This is a hacky way to get a origin relative to this widget from a window origin.
+    pub(crate) last_layout_viewport_pos: Point,
+
     // TODO - test how it looks like
     constrain_horizontal: bool,
     constrain_vertical: bool,
@@ -45,6 +49,7 @@ impl<W: Widget> Portal<W> {
         Portal {
             child: WidgetPod::new(child),
             viewport_pos: Point::ORIGIN,
+            last_layout_viewport_pos: Point::ORIGIN,
             constrain_horizontal: false,
             constrain_vertical: false,
             must_fill: false,
@@ -310,6 +315,7 @@ impl<W: Widget> Widget for Portal<W> {
         // TODO - document better
         // Recompute the portal offset for the new layout
         self.set_viewport_pos_raw(portal_size, content_size, self.viewport_pos);
+        self.last_layout_viewport_pos = self.viewport_pos;
         // TODO - recompute portal progress
 
         ctx.place_child(&mut self.child, Point::new(0.0, -self.viewport_pos.y), env);

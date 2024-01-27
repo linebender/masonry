@@ -63,7 +63,7 @@ pub struct Key<T> {
 impl<T> Clone for Key<T> {
     fn clone(&self) -> Self {
         Self {
-            key: self.key.clone(),
+            key: self.key,
             value_type: self.value_type.clone(),
         }
     }

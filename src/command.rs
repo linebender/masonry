@@ -270,6 +270,9 @@ mod sys {
     /// Select all.
     pub const SELECT_ALL: Selector = Selector::new("masonry-builtin.menu-select-all");
 
+    /// Inspect the window.
+    pub const INSPECT: Selector = Selector::new("masonry-builtin.inspect");
+
     /// Text input state has changed, and we need to notify the platform.
     pub(crate) const INVALIDATE_IME: Selector<ImeInvalidation> =
         Selector::new("masonry-builtin.invalidate-ime");

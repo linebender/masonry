@@ -6,3 +6,6 @@ rustflags = [
     "-Aclippy::single_match",
     "-Aclippy::bool_assert_comparison",
 ]
+
+[profile.release]
+debug = true
