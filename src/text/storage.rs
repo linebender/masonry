@@ -8,14 +8,13 @@ use std::sync::Arc;
 
 use super::attribute::Link;
 use crate::piet::{PietTextLayoutBuilder, TextStorage as PietTextStorage};
-use crate::{Data, Env};
 
 /// A type that represents text that can be displayed.
-pub trait TextStorage: PietTextStorage + Data {
+pub trait TextStorage: PietTextStorage + Eq + Clone {
     /// If this TextStorage object manages style spans, it should implement
     /// this method and update the provided builder with its spans, as required.
     #[allow(unused_variables)]
-    fn add_attributes(&self, builder: PietTextLayoutBuilder, env: &Env) -> PietTextLayoutBuilder {
+    fn add_attributes(&self, builder: PietTextLayoutBuilder) -> PietTextLayoutBuilder {
         builder
     }
 

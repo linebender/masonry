@@ -11,8 +11,8 @@ use crate::kurbo::common::FloatExt;
 use crate::kurbo::Vec2;
 use crate::widget::{WidgetMut, WidgetRef};
 use crate::{
-    BoxConstraints, Data, Env, Event, EventCtx, KeyOrValue, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Point, Rect, RenderContext, Size, StatusChange, Widget, WidgetId, WidgetPod,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, Point, Rect, Size, StatusChange, Widget, WidgetId, WidgetPod,
 };
 
 /// A container with either horizontal or vertical layout.
@@ -208,16 +208,13 @@ impl Flex {
     /// generally prefer to use [`add_default_spacer`].
     ///
     /// [`add_default_spacer`]: #method.add_default_spacer
-    pub fn with_spacer(mut self, len: impl Into<KeyOrValue<f64>>) -> Self {
-        let mut value = len.into();
-        if let KeyOrValue::Concrete(ref mut len) = value {
-            if *len < 0.0 {
+    pub fn with_spacer(mut self, mut len: f64) -> Self {
+            if len < 0.0 {
                 tracing::warn!("add_spacer called with negative length: {}", len);
             }
-            *len = len.clamp(0.0, f64::MAX);
-        }
+            len = len.clamp(0.0, f64::MAX);
 
-        let new_child = Child::FixedSpacer(value, 0.0);
+        let new_child = Child::FixedSpacer(len, 0.0);
         self.children.push(new_child);
         self
     }
@@ -335,16 +332,14 @@ impl<'a, 'b> FlexMut<'a, 'b> {
     /// generally prefer to use [`add_default_spacer`].
     ///
     /// [`add_default_spacer`]: Flex::add_default_spacer
-    pub fn add_spacer(&mut self, len: impl Into<KeyOrValue<f64>>) {
-        let mut value = len.into();
-        if let KeyOrValue::Concrete(ref mut len) = value {
-            if *len < 0.0 {
+    pub fn add_spacer(&mut self, mut len: f64) {
+
+            if len < 0.0 {
                 tracing::warn!("add_spacer called with negative length: {}", len);
             }
-            *len = len.clamp(0.0, f64::MAX);
-        }
+            len = len.clamp(0.0, f64::MAX);
 
-        let new_child = Child::FixedSpacer(value, 0.0);
+        let new_child = Child::FixedSpacer(len, 0.0);
         self.widget.children.push(new_child);
         // TODO
         self.ctx.widget_state.needs_layout = true;
@@ -428,16 +423,13 @@ impl<'a, 'b> FlexMut<'a, 'b> {
     /// generally prefer to use [`add_default_spacer`].
     ///
     /// [`add_default_spacer`]: Flex::add_default_spacer
-    pub fn insert_spacer(&mut self, idx: usize, len: impl Into<KeyOrValue<f64>>) {
-        let mut value = len.into();
-        if let KeyOrValue::Concrete(ref mut len) = value {
-            if *len < 0.0 {
+    pub fn insert_spacer(&mut self, idx: usize, mut len: f64) {
+            if len < 0.0 {
                 tracing::warn!("add_spacer called with negative length: {}", len);
             }
-            *len = len.clamp(0.0, f64::MAX);
-        }
+            len = len.clamp(0.0, f64::MAX);
 
-        let new_child = Child::FixedSpacer(value, 0.0);
+        let new_child = Child::FixedSpacer(len, 0.0);
         self.widget.children.insert(idx, new_child);
         // TODO
         self.ctx.widget_state.needs_layout = true;
@@ -480,21 +472,21 @@ impl<'a, 'b> FlexMut<'a, 'b> {
 }
 
 impl Widget for Flex {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env) {
+    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
         for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
-            child.on_event(ctx, event, env);
+            child.on_event(ctx, event);
         }
     }
 
-    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}
+    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, env: &Env) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {
         for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
-            child.lifecycle(ctx, event, env);
+            child.lifecycle(ctx, event);
         }
     }
 
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, env: &Env) -> Size {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
         // we loosen our constraints when passing to children.
         let loosened_bc = bc.loosen();
 
@@ -516,7 +508,7 @@ impl Widget for Flex {
                     let child_bc =
                         self.direction
                             .constraints(&loosened_bc, 0.0, std::f64::INFINITY);
-                    let child_size = widget.layout(ctx, &child_bc, env);
+                    let child_size = widget.layout(ctx, &child_bc);
                     let baseline_offset = widget.baseline_offset();
 
                     if child_size.width.is_infinite() {
@@ -534,7 +526,7 @@ impl Widget for Flex {
                     max_below_baseline = max_below_baseline.max(baseline_offset);
                 }
                 Child::FixedSpacer(kv, calculated_siz) => {
-                    *calculated_siz = kv.resolve(env);
+                    *calculated_siz = *kv;
                     if *calculated_siz < 0.0 {
                         tracing::warn!("Length provided to fixed spacer was less than 0");
                     }
@@ -560,7 +552,7 @@ impl Widget for Flex {
                     remainder = desired_major - actual_major;
 
                     let child_bc = self.direction.constraints(&loosened_bc, 0.0, actual_major);
-                    let child_size = widget.layout(ctx, &child_bc, env);
+                    let child_size = widget.layout(ctx, &child_bc);
                     let baseline_offset = widget.baseline_offset();
 
                     major_flex += self.direction.major(child_size).expand();
@@ -625,7 +617,7 @@ impl Widget for Flex {
                                 .pack(self.direction.major(child_size), minor_dim)
                                 .into();
                             let child_bc = BoxConstraints::tight(fill_size);
-                            widget.layout(ctx, &child_bc, env);
+                            widget.layout(ctx, &child_bc);
                             0.0
                         }
                         _ => {
@@ -635,7 +627,7 @@ impl Widget for Flex {
                     };
 
                     let child_pos: Point = self.direction.pack(major, child_minor_offset).into();
-                    ctx.place_child(widget, child_pos, env);
+                    ctx.place_child(widget, child_pos);
                     major += self.direction.major(child_size).expand();
                     major += spacing.next().unwrap_or(0.);
                 }
@@ -693,11 +685,13 @@ impl Widget for Flex {
         my_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx) {
         for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
-            child.paint(ctx, env);
+            child.paint(ctx);
         }
 
+        // TODO remove env
+        /*
         // paint the baseline if we're debugging layout
         if env.get(Env::DEBUG_PAINT) && ctx.widget_state.baseline_offset != 0.0 {
             let color = env.get_debug_color(ctx.widget_id().to_raw());
@@ -706,6 +700,7 @@ impl Widget for Flex {
             let stroke_style = crate::piet::StrokeStyle::new().dash_pattern(&[4.0, 4.0]);
             ctx.stroke_styled(line, &color, 1.0, &stroke_style);
         }
+        */
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {
@@ -852,24 +847,6 @@ impl CrossAxisAlignment {
     }
 }
 
-impl Data for Axis {
-    fn same(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
-impl Data for CrossAxisAlignment {
-    fn same(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
-impl Data for MainAxisAlignment {
-    fn same(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
 struct Spacing {
     alignment: MainAxisAlignment,
     extra: f64,
@@ -981,7 +958,7 @@ enum Child {
         alignment: Option<CrossAxisAlignment>,
         flex: f64,
     },
-    FixedSpacer(KeyOrValue<f64>, f64),
+    FixedSpacer(f64, f64),
     FlexedSpacer(f64, f64),
 }
 
@@ -1106,31 +1083,31 @@ mod tests {
 
         let mut harness = TestHarness::create(widget);
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Start);
         });
         assert_render_snapshot!(harness, "row_cross_axis_start");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Center);
         });
         assert_render_snapshot!(harness, "row_cross_axis_center");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::End);
         });
         assert_render_snapshot!(harness, "row_cross_axis_end");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Baseline);
         });
         assert_render_snapshot!(harness, "row_cross_axis_baseline");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Fill);
         });
@@ -1152,37 +1129,37 @@ mod tests {
 
         // MAIN AXIS ALIGNMENT
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::Start);
         });
         assert_render_snapshot!(harness, "row_main_axis_start");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::Center);
         });
         assert_render_snapshot!(harness, "row_main_axis_center");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::End);
         });
         assert_render_snapshot!(harness, "row_main_axis_end");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceBetween);
         });
         assert_render_snapshot!(harness, "row_main_axis_spaceBetween");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceEvenly);
         });
         assert_render_snapshot!(harness, "row_main_axis_spaceEvenly");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceAround);
         });
@@ -1191,7 +1168,7 @@ mod tests {
         // FILL MAIN AXIS
         // TODO - This doesn't seem to do anything?
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_must_fill_main_axis(true);
         });
@@ -1211,31 +1188,31 @@ mod tests {
 
         let mut harness = TestHarness::create(widget);
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Start);
         });
         assert_render_snapshot!(harness, "col_cross_axis_start");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Center);
         });
         assert_render_snapshot!(harness, "col_cross_axis_center");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::End);
         });
         assert_render_snapshot!(harness, "col_cross_axis_end");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Baseline);
         });
         assert_render_snapshot!(harness, "col_cross_axis_baseline");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_cross_axis_alignment(CrossAxisAlignment::Fill);
         });
@@ -1257,37 +1234,37 @@ mod tests {
 
         // MAIN AXIS ALIGNMENT
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::Start);
         });
         assert_render_snapshot!(harness, "col_main_axis_start");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::Center);
         });
         assert_render_snapshot!(harness, "col_main_axis_center");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::End);
         });
         assert_render_snapshot!(harness, "col_main_axis_end");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceBetween);
         });
         assert_render_snapshot!(harness, "col_main_axis_spaceBetween");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceEvenly);
         });
         assert_render_snapshot!(harness, "col_main_axis_spaceEvenly");
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_main_axis_alignment(MainAxisAlignment::SpaceAround);
         });
@@ -1296,7 +1273,7 @@ mod tests {
         // FILL MAIN AXIS
         // TODO - This doesn't seem to do anything?
 
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
             flex.set_must_fill_main_axis(true);
         });
@@ -1315,7 +1292,7 @@ mod tests {
 
             let mut harness = TestHarness::create(widget);
 
-            harness.edit_root_widget(|mut flex, _| {
+            harness.edit_root_widget(|mut flex| {
                 let mut flex = flex.downcast::<Flex>().unwrap();
 
                 flex.remove_child(1);
@@ -1376,7 +1353,7 @@ mod tests {
             .with_spacer(1.0);
 
         let mut harness = TestHarness::create(widget);
-        harness.edit_root_widget(|mut flex, _| {
+        harness.edit_root_widget(|mut flex| {
             let mut flex = flex.downcast::<Flex>().unwrap();
 
             let mut child = flex.child_mut(1).unwrap();

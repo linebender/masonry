@@ -142,7 +142,6 @@ macro_rules! assert_render_snapshot {
 /// All of the state except for the `Piet` (render context). We need to pass
 /// that in to get around some lifetime issues.
 struct MockAppRoot {
-    env: Env,
     window: WindowRoot,
     command_queue: CommandQueue,
     action_queue: ActionQueue,
@@ -189,7 +188,6 @@ impl TestHarness {
 
         let mut harness = TestHarness {
             mock_app: MockAppRoot {
-                env: Env::with_theme(),
                 window,
                 command_queue: VecDeque::new(),
                 action_queue: VecDeque::new(),
@@ -467,7 +465,7 @@ impl TestHarness {
     /// Because of how WidgetMut works, it can only be passed to a user-provided callback.
     pub fn edit_root_widget<R>(
         &mut self,
-        f: impl FnOnce(WidgetMut<'_, '_, Box<dyn Widget>>, &Env) -> R,
+        f: impl FnOnce(WidgetMut<'_, '_, Box<dyn Widget>>) -> R,
     ) -> R {
         // TODO - Move to MockAppRoot?
         let window = &mut self.mock_app.window;
@@ -498,7 +496,7 @@ impl TestHarness {
                 parent_widget_state: &mut fake_widget_state,
             };
 
-            f(root_widget, &self.mock_app.env)
+            f(root_widget)
         };
 
         // Timer creation should use mock_timer_queue instead
@@ -511,7 +509,6 @@ impl TestHarness {
             &mut self.mock_app.debug_logger,
             &mut self.mock_app.command_queue,
             &mut self.mock_app.action_queue,
-            &self.mock_app.env,
             false,
         );
         self.process_state_after_event();
@@ -624,7 +621,6 @@ impl MockAppRoot {
             &mut self.debug_logger,
             &mut self.command_queue,
             &mut self.action_queue,
-            &self.env,
         )
     }
 
@@ -634,7 +630,6 @@ impl MockAppRoot {
             &mut self.debug_logger,
             &mut self.command_queue,
             &mut self.action_queue,
-            &self.env,
             false,
         );
     }
@@ -644,7 +639,6 @@ impl MockAppRoot {
             &mut self.debug_logger,
             &mut self.command_queue,
             &mut self.action_queue,
-            &self.env,
         );
     }
 
@@ -655,7 +649,6 @@ impl MockAppRoot {
             &mut self.debug_logger,
             &mut self.command_queue,
             &mut self.action_queue,
-            &self.env,
         );
     }
 }

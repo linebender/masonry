@@ -16,7 +16,7 @@ use crate::kurbo::Vec2;
 use crate::text::{FontDescriptor, TextAlignment, TextLayout};
 use crate::widget::WidgetRef;
 use crate::{
-    ArcStr, BoxConstraints, Color, Data, Env, Event, EventCtx, KeyOrValue, LayoutCtx, LifeCycle,
+    ArcStr, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
     LifeCycleCtx, PaintCtx, Point, RenderContext, Size, StatusChange, Widget,
 };
 
@@ -30,7 +30,7 @@ pub struct Label {
     line_break_mode: LineBreaking,
 
     disabled: bool,
-    default_text_color: KeyOrValue<Color>,
+    default_text_color: Color,
 }
 
 crate::declare_widget!(LabelMut, Label);
@@ -86,10 +86,10 @@ impl Label {
     /// The argument can be either a `Color` or a [`Key<Color>`].
     ///
     /// [`Key<Color>`]: ../struct.Key.html
-    pub fn with_text_color(mut self, color: impl Into<KeyOrValue<Color>>) -> Self {
+    pub fn with_text_color(mut self, color: impl Into<Color>) -> Self {
         let color = color.into();
         if !self.disabled {
-            self.text_layout.set_text_color(color.clone());
+            self.text_layout.set_text_color(color);
         }
         self.default_text_color = color;
         self
@@ -100,8 +100,8 @@ impl Label {
     /// The argument can be either an `f64` or a [`Key<f64>`].
     ///
     /// [`Key<f64>`]: ../struct.Key.html
-    pub fn with_text_size(mut self, size: impl Into<KeyOrValue<f64>>) -> Self {
-        self.text_layout.set_text_size(size);
+    pub fn with_text_size(mut self, size: impl Into<f64>) -> Self {
+        self.text_layout.set_text_size(size.into());
         self
     }
 
@@ -113,8 +113,8 @@ impl Label {
     /// that refers to a font defined in the [`Env`].
     ///
     /// [`Key<FontDescriptor>`]: ../struct.Key.html
-    pub fn with_font(mut self, font: impl Into<KeyOrValue<FontDescriptor>>) -> Self {
-        self.text_layout.set_font(font);
+    pub fn with_font(mut self, font: impl Into<FontDescriptor>) -> Self {
+        self.text_layout.set_font(font.into());
         self
     }
 
@@ -162,10 +162,10 @@ impl LabelMut<'_, '_> {
     ///
     /// The argument can be either a `Color` or a [`Key<Color>`].
     /// [`Key<Color>`]: ../struct.Key.html
-    pub fn set_text_color(&mut self, color: impl Into<KeyOrValue<Color>>) {
+    pub fn set_text_color(&mut self, color: impl Into<Color>) {
         let color = color.into();
         if !self.widget.disabled {
-            self.widget.text_layout.set_text_color(color.clone());
+            self.widget.text_layout.set_text_color(color);
         }
         self.widget.default_text_color = color;
         self.ctx.request_layout();
@@ -176,8 +176,8 @@ impl LabelMut<'_, '_> {
     /// The argument can be either an `f64` or a [`Key<f64>`].
     ///
     /// [`Key<f64>`]: ../struct.Key.html
-    pub fn set_text_size(&mut self, size: impl Into<KeyOrValue<f64>>) {
-        self.widget.text_layout.set_text_size(size);
+    pub fn set_text_size(&mut self, size: impl Into<f64>) {
+        self.widget.text_layout.set_text_size(size.into());
         self.ctx.request_layout();
     }
 
@@ -187,8 +187,8 @@ impl LabelMut<'_, '_> {
     /// that refers to a font defined in the [`Env`].
     ///
     /// [`Key<FontDescriptor>`]: ../struct.Key.html
-    pub fn set_font(&mut self, font: impl Into<KeyOrValue<FontDescriptor>>) {
-        self.widget.text_layout.set_font(font);
+    pub fn set_font(&mut self, font: impl Into<FontDescriptor>) {
+        self.widget.text_layout.set_font(font.into());
         self.ctx.request_layout();
     }
 
@@ -208,7 +208,7 @@ impl LabelMut<'_, '_> {
 // --- TRAIT IMPLS ---
 
 impl Widget for Label {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, _env: &Env) {
+    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
         match event {
             Event::MouseUp(event) => {
                 // Account for the padding
@@ -233,13 +233,13 @@ impl Widget for Label {
         }
     }
 
-    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}
+    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, _env: &Env) {
+    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {
         match event {
             LifeCycle::DisabledChanged(disabled) => {
                 let color = if *disabled {
-                    KeyOrValue::Key(crate::theme::DISABLED_TEXT_COLOR)
+                    crate::theme::DISABLED_TEXT_COLOR
                 } else {
                     self.default_text_color.clone()
                 };
@@ -250,14 +250,14 @@ impl Widget for Label {
         }
     }
 
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, env: &Env) -> Size {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
         let width = match self.line_break_mode {
             LineBreaking::WordWrap => bc.max().width - LABEL_X_PADDING * 2.0,
             _ => f64::INFINITY,
         };
 
         self.text_layout.set_wrap_width(width);
-        self.text_layout.rebuild_if_needed(ctx.text(), env);
+        self.text_layout.rebuild_if_needed(ctx.text());
 
         let text_metrics = self.text_layout.layout_metrics();
         ctx.set_baseline_offset(text_metrics.size.height - text_metrics.first_baseline);
@@ -269,7 +269,7 @@ impl Widget for Label {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, _env: &Env) {
+    fn paint(&mut self, ctx: &mut PaintCtx) {
         let origin = Point::new(LABEL_X_PADDING, 0.0);
         let label_size = ctx.size();
 
@@ -289,12 +289,6 @@ impl Widget for Label {
 
     fn get_debug_text(&self) -> Option<String> {
         Some(self.current_text.to_string())
-    }
-}
-
-impl Data for LineBreaking {
-    fn same(&self, other: &Self) -> bool {
-        self == other
     }
 }
 
@@ -389,7 +383,7 @@ mod tests {
 
             let mut harness = TestHarness::create_with_size(label, Size::new(50.0, 50.0));
 
-            harness.edit_root_widget(|mut label, _| {
+            harness.edit_root_widget(|mut label| {
                 let mut label = label.downcast::<Label>().unwrap();
                 label.set_text("The quick brown fox jumps over the lazy dog");
                 label.set_text_color(PRIMARY_LIGHT);

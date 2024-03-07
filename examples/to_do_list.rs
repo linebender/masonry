@@ -8,7 +8,7 @@ use masonry::widget::{
     Button, CrossAxisAlignment, Flex, Label, Portal, SizedBox, TextBox, WidgetMut,
 };
 use masonry::{
-    Action, AppDelegate, AppLauncher, Color, DelegateCtx, Env, WidgetId, WindowDescription,
+    Action, AppDelegate, AppLauncher, Color, DelegateCtx, WidgetId, WindowDescription,
     WindowId,
 };
 
@@ -23,7 +23,6 @@ impl AppDelegate for Delegate {
         _window_id: WindowId,
         _widget_id: WidgetId,
         action: Action,
-        _env: &Env,
     ) {
         match action {
             Action::ButtonPressed | Action::TextEntered(_) => {

@@ -25,7 +25,7 @@ use crate::testing::MockTimerQueue;
 use crate::text::{ImeHandlerRef, TextFieldRegistration};
 use crate::widget::{CursorChange, FocusChange, StoreInWidgetMut, WidgetMut, WidgetState};
 use crate::{
-    Affine, Env, Insets, Point, Rect, Size, Target, Vec2, Widget, WidgetId, WidgetPod, WindowId,
+    Affine, Insets, Point, Rect, Size, Target, Vec2, Widget, WidgetId, WidgetPod, WindowId,
 };
 
 /// A macro for implementing methods on multiple contexts.
@@ -808,7 +808,7 @@ impl LayoutCtx<'_, '_> {
     ///
     /// Container widgets must call this method with each non-stashed child in their
     /// layout method, after calling `child.layout(...)`.
-    pub fn place_child(&mut self, child: &mut WidgetPod<impl Widget>, origin: Point, env: &Env) {
+    pub fn place_child(&mut self, child: &mut WidgetPod<impl Widget>, origin: Point) {
         child.state.origin = origin;
         child.state.is_expecting_place_child_call = false;
         let layout_rect = child.layout_rect();
@@ -824,7 +824,6 @@ impl LayoutCtx<'_, '_> {
             self.global_state,
             layout_rect,
             self.mouse_pos,
-            env,
         ) {
             self.widget_state.merge_up(&mut child.state);
         }
