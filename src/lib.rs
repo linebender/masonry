@@ -92,9 +92,8 @@
 
 // TODO - Add logo
 
-pub use druid_shell as shell;
-#[doc(inline)]
-pub use druid_shell::{kurbo, piet};
+//#[doc(inline)]
+pub use vello::kurbo;
 
 #[macro_use]
 mod util;
@@ -131,15 +130,19 @@ pub use box_constraints::BoxConstraints;
 pub use command::{Command, Notification, Selector, SingleUse, Target};
 pub use contexts::{EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, WidgetCtx};
 pub use data::Data;
-pub use druid_shell::Error as PlatformError;
 pub use env::{Env, Key, KeyOrValue, Value, ValueType, ValueTypeError};
 pub use event::{Event, InternalEvent, InternalLifeCycle, LifeCycle, StatusChange};
 pub use kurbo::{Affine, Insets, Point, Rect, Size, Vec2};
 pub use mouse::MouseEvent;
-pub use piet::{Color, ImageBuf, LinearGradient, RadialGradient, RenderContext, UnitPoint};
 pub use platform::{
     MasonryWinHandler, WindowConfig, WindowDescription, WindowId, WindowSizePolicy,
 };
 pub use text::ArcStr;
 pub use util::{AsAny, Handled};
 pub use widget::{BackgroundBrush, Widget, WidgetId, WidgetPod, WidgetState};
+pub use winit::Error as PlatformError;
+
+// TODO
+//pub use piet::{Color, ImageBuf, LinearGradient, RadialGradient, RenderContext, };
+// TODO UnitPoint
+pub use vello::peniko::Color;
