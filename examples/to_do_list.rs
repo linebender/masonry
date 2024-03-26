@@ -8,8 +8,7 @@ use masonry::widget::{
     Button, CrossAxisAlignment, Flex, Label, Portal, SizedBox, TextBox, WidgetMut,
 };
 use masonry::{
-    Action, AppDelegate, AppLauncher, Color, DelegateCtx, WidgetId, WindowDescription,
-    WindowId,
+    Action, AppDelegate, AppLauncher, Color, DelegateCtx, WidgetId, WindowDescription, WindowId,
 };
 
 struct Delegate {

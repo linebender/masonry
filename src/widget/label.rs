@@ -16,8 +16,8 @@ use crate::kurbo::Vec2;
 use crate::text::{FontDescriptor, TextAlignment, TextLayout};
 use crate::widget::WidgetRef;
 use crate::{
-    ArcStr, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, RenderContext, Size, StatusChange, Widget,
+    ArcStr, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, RenderContext, Size, StatusChange, Widget,
 };
 
 // added padding between the edges of the widget and the text.
@@ -60,7 +60,7 @@ impl Label {
             text_layout,
             line_break_mode: LineBreaking::Overflow,
             disabled: false,
-            default_text_color: crate::theme::TEXT_COLOR.into(),
+            default_text_color: crate::theme::TEXT_COLOR,
         }
     }
 
@@ -71,7 +71,7 @@ impl Label {
             text_layout: TextLayout::new(),
             line_break_mode: LineBreaking::Overflow,
             disabled: false,
-            default_text_color: crate::theme::TEXT_COLOR.into(),
+            default_text_color: crate::theme::TEXT_COLOR,
         }
     }
 
@@ -108,11 +108,6 @@ impl Label {
     // FIXME - with_font cancels with_text_size
     // TODO - write failing test for this case
     /// Builder-style method for setting the font.
-    ///
-    /// The argument can be a [`FontDescriptor`] or a [`Key<FontDescriptor>`]
-    /// that refers to a font defined in the [`Env`].
-    ///
-    /// [`Key<FontDescriptor>`]: ../struct.Key.html
     pub fn with_font(mut self, font: impl Into<FontDescriptor>) -> Self {
         self.text_layout.set_font(font.into());
         self
@@ -182,11 +177,6 @@ impl LabelMut<'_, '_> {
     }
 
     /// Set the font.
-    ///
-    /// The argument can be a [`FontDescriptor`] or a [`Key<FontDescriptor>`]
-    /// that refers to a font defined in the [`Env`].
-    ///
-    /// [`Key<FontDescriptor>`]: ../struct.Key.html
     pub fn set_font(&mut self, font: impl Into<FontDescriptor>) {
         self.widget.text_layout.set_font(font.into());
         self.ctx.request_layout();
@@ -241,7 +231,7 @@ impl Widget for Label {
                 let color = if *disabled {
                     crate::theme::DISABLED_TEXT_COLOR
                 } else {
-                    self.default_text_color.clone()
+                    self.default_text_color
                 };
                 self.text_layout.set_text_color(color);
                 ctx.request_layout();

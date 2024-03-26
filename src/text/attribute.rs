@@ -64,7 +64,7 @@ struct Span<T> {
 /// let font = Attribute::font_descriptor(theme::UI_FONT);
 /// let font_size = Attribute::size(32.0);
 /// let explicit_color = Attribute::text_color(Color::BLACK);
-/// let theme_color = Attribute::text_color(theme::SELECTION_COLOR);
+/// let theme_color = Attribute::text_color(theme::SELECTION_TEXT_COLOR);
 /// ```
 ///
 /// [`KeyOrValue`]: ../enum.KeyOrValue.html

@@ -39,10 +39,9 @@ use crate::testing::MockTimerQueue;
 use crate::text::TextFieldRegistration;
 use crate::widget::{FocusChange, StoreInWidgetMut, WidgetMut, WidgetRef, WidgetState};
 use crate::{
-    command as sys_cmd, ArcStr, BoxConstraints, Command, Event, EventCtx, Handled,
-    InternalEvent, InternalLifeCycle, LayoutCtx, LifeCycle, LifeCycleCtx, MasonryWinHandler,
-    PaintCtx, PlatformError, Target, Widget, WidgetCtx, WidgetId, WidgetPod, WindowDescription,
-    WindowId,
+    command as sys_cmd, ArcStr, BoxConstraints, Command, Event, EventCtx, Handled, InternalEvent,
+    InternalLifeCycle, LayoutCtx, LifeCycle, LifeCycleCtx, MasonryWinHandler, PaintCtx,
+    PlatformError, Target, Widget, WidgetCtx, WidgetId, WidgetPod, WindowDescription, WindowId,
 };
 
 /// The type of a function that will be called once an IME field is updated.
@@ -461,9 +460,7 @@ impl AppRoot {
     /// Handle a command. Top level commands (e.g. for creating and destroying
     /// windows) have their logic here; other commands are passed to the window.
     fn do_cmd(&mut self, cmd: Command) {
-        if self.with_delegate(|delegate, ctx| delegate.on_command(ctx, &cmd))
-            == Handled::Yes
-        {
+        if self.with_delegate(|delegate, ctx| delegate.on_command(ctx, &cmd)) == Handled::Yes {
             return;
         }
 
@@ -936,39 +933,21 @@ impl WindowRoot {
 
         if self.root.state().needs_window_origin && !self.root.state().needs_layout {
             let event = LifeCycle::Internal(InternalLifeCycle::ParentWindowOrigin);
-            self.lifecycle(
-                &event,
-                debug_logger,
-                command_queue,
-                action_queue,
-                false,
-            );
+            self.lifecycle(&event, debug_logger, command_queue, action_queue, false);
         }
 
         // Update the disabled state if necessary
         // Always do this before updating the focus-chain
         if self.root.state().tree_disabled_changed() {
             let event = LifeCycle::Internal(InternalLifeCycle::RouteDisabledChanged);
-            self.lifecycle(
-                &event,
-                debug_logger,
-                command_queue,
-                action_queue,
-                false,
-            );
+            self.lifecycle(&event, debug_logger, command_queue, action_queue, false);
         }
 
         // Update the focus-chain if necessary
         // Always do this before sending focus change, since this event updates the focus chain.
         if self.root.state().update_focus_chain {
             let event = LifeCycle::BuildFocusChain;
-            self.lifecycle(
-                &event,
-                debug_logger,
-                command_queue,
-                action_queue,
-                false,
-            );
+            self.lifecycle(&event, debug_logger, command_queue, action_queue, false);
         }
 
         self.update_focus(widget_state, debug_logger, command_queue, action_queue);
@@ -1228,13 +1207,7 @@ impl WindowRoot {
                 },
             );
         }
-        self.paint(
-            piet,
-            invalid,
-            debug_logger,
-            command_queue,
-            action_queue,
-        );
+        self.paint(piet, invalid, debug_logger, command_queue, action_queue);
     }
 
     pub(crate) fn layout(
@@ -1327,6 +1300,9 @@ impl WindowRoot {
             z_ops: Vec::new(),
             region: invalid.clone(),
             depth: 0,
+            debug_paint: false,
+            debug_widget: false,
+            debug_widget_id: false,
         };
 
         let root = &mut self.root;
@@ -1391,13 +1367,7 @@ impl WindowRoot {
             // Only send RouteFocusChanged in case there's actual change
             if old != new {
                 let event = LifeCycle::Internal(InternalLifeCycle::RouteFocusChanged { old, new });
-                self.lifecycle(
-                    &event,
-                    debug_logger,
-                    command_queue,
-                    action_queue,
-                    false,
-                );
+                self.lifecycle(&event, debug_logger, command_queue, action_queue, false);
                 self.focus = new;
                 // check if the newly focused widget has an IME session, and
                 // notify the system if so.

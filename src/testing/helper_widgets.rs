@@ -119,10 +119,7 @@ impl<S> ModularWidget<S> {
         }
     }
 
-    pub fn event_fn(
-        mut self,
-        f: impl FnMut(&mut S, &mut EventCtx, &Event) + 'static,
-    ) -> Self {
+    pub fn event_fn(mut self, f: impl FnMut(&mut S, &mut EventCtx, &Event) + 'static) -> Self {
         self.on_event = Some(Box::new(f));
         self
     }

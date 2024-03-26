@@ -130,6 +130,9 @@ pub struct PaintCtx<'a, 'b, 'c> {
     pub(crate) region: Region,
     /// The approximate depth in the tree at the time of painting.
     pub(crate) depth: u32,
+    pub(crate) debug_paint: bool,
+    pub(crate) debug_widget: bool,
+    pub(crate) debug_widget_id: bool,
 }
 
 impl_context_method!(
@@ -862,6 +865,9 @@ impl PaintCtx<'_, '_, '_> {
             z_ops: Vec::new(),
             region: region.into(),
             depth: self.depth + 1,
+            debug_paint: self.debug_paint,
+            debug_widget: self.debug_widget,
+            debug_widget_id: self.debug_widget_id,
         };
         f(&mut child_ctx);
         self.z_ops.append(&mut child_ctx.z_ops);
@@ -876,14 +882,14 @@ impl PaintCtx<'_, '_, '_> {
     /// # Examples
     ///
     /// ```
-    /// # use masonry::{Env, PaintCtx, RenderContext, theme};
+    /// # use masonry::{PaintCtx, RenderContext, theme};
     /// # struct T;
     /// # impl T {
-    /// fn paint(&mut self, ctx: &mut PaintCtx, _data: &T, env: &Env) {
+    /// fn paint(&mut self, ctx: &mut PaintCtx) {
     ///     let clip_rect = ctx.size().to_rect().inset(5.0);
     ///     ctx.with_save(|ctx| {
     ///         ctx.clip(clip_rect);
-    ///         ctx.stroke(clip_rect, &env.get(theme::PRIMARY_DARK), 5.0);
+    ///         ctx.stroke(clip_rect, &theme::PRIMARY_DARK, 5.0);
     ///     });
     /// }
     /// # }

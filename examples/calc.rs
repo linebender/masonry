@@ -11,9 +11,8 @@ use std::sync::Arc;
 
 use masonry::widget::{Align, CrossAxisAlignment, Flex, Label, SizedBox, WidgetRef};
 use masonry::{
-    Action, AppDelegate, AppLauncher, BoxConstraints, Color, Event, EventCtx, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, Point, Size, StatusChange, Widget, WidgetPod,
-    WindowDescription,
+    Action, AppDelegate, AppLauncher, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
+    LifeCycleCtx, PaintCtx, Point, Size, StatusChange, Widget, WidgetPod, WindowDescription,
 };
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, Span};

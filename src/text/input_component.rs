@@ -20,8 +20,8 @@ use crate::kurbo::{Line, Point, Rect, Vec2};
 use crate::piet::TextLayout as _;
 use crate::widget::WidgetRef;
 use crate::{
-    text, theme, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, RenderContext, Selector, Size, StatusChange, Widget,
+    text, theme, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    RenderContext, Selector, Size, StatusChange, Widget,
 };
 
 /// A widget that accepts text input.
@@ -276,7 +276,7 @@ impl<T: TextStorage + EditableText> TextComponentMut<'_, '_, T> {
             .borrow()
             .layout
             .text()
-            .map(|old| !old.eq(&new_text))
+            .map(|old| !old.maybe_eq(&new_text))
             .unwrap_or(true);
         if needs_rebuild {
             self.widget.borrow_mut().layout.set_text(new_text.clone());
@@ -914,7 +914,7 @@ impl<T: TextStorage + EditableText> InputHandler for EditSessionHandle<T> {
             .borrow()
             .layout
             .text()
-            .map(|old| !old.eq(&self.text))
+            .map(|old| !old.maybe_eq(&self.text))
             .unwrap_or(true);
         if text_changed {
             self.inner.borrow_mut().external_text_change = Some(self.text.clone());

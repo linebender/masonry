@@ -13,8 +13,8 @@ use crate::kurbo::RoundedRectRadii;
 use crate::piet::{Color, FixedGradient, LinearGradient, PaintBrush, RadialGradient};
 use crate::widget::{WidgetId, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Point, RenderContext, Size, StatusChange, Widget,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    RenderContext, Size, StatusChange, Widget,
 };
 
 // FIXME - Improve all doc in this module ASAP.
@@ -68,7 +68,7 @@ impl SizedBox {
             height: None,
             background: None,
             border: None,
-            corner_radius: RoundedRectRadii::from_single_radius(0.0).into(),
+            corner_radius: RoundedRectRadii::from_single_radius(0.0),
         }
     }
 
@@ -80,7 +80,7 @@ impl SizedBox {
             height: None,
             background: None,
             border: None,
-            corner_radius: RoundedRectRadii::from_single_radius(0.0).into(),
+            corner_radius: RoundedRectRadii::from_single_radius(0.0),
         }
     }
 
@@ -96,7 +96,7 @@ impl SizedBox {
             height: None,
             background: None,
             border: None,
-            corner_radius: RoundedRectRadii::from_single_radius(0.0).into(),
+            corner_radius: RoundedRectRadii::from_single_radius(0.0),
         }
     }
 
@@ -145,22 +145,14 @@ impl SizedBox {
     /// Builder-style method for setting the background for this widget.
     ///
     /// This can be passed anything which can be represented by a [`BackgroundBrush`];
-    /// notably, it can be any [`Color`], a [`Key<Color>`](Key) resolvable in the [`Env`],
-    /// any gradient, or a fully custom painter `FnMut`.
+    /// notably, it can be any [`Color`], any gradient, or a fully custom painter `FnMut`.
     pub fn background(mut self, brush: impl Into<BackgroundBrush>) -> Self {
         self.background = Some(brush.into());
         self
     }
 
     /// Builder-style method for painting a border around the widget with a color and width.
-    ///
-    /// Arguments can be either concrete values, or a [`Key`] of the respective
-    /// type.
-    pub fn border(
-        mut self,
-        color: impl Into<Color>,
-        width: impl Into<f64>,
-    ) -> Self {
+    pub fn border(mut self, color: impl Into<Color>, width: impl Into<f64>) -> Self {
         self.border = Some(BorderStyle {
             color: color.into(),
             width: width.into(),
@@ -217,8 +209,7 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
     /// Set the background for this widget.
     ///
     /// This can be passed anything which can be represented by a [`BackgroundBrush`];
-    /// notably, it can be any [`Color`], a [`Key<Color>`](Key) resolvable in the [`Env`],
-    /// any gradient, or a fully custom painter `FnMut`.
+    /// notably, it can be any [`Color`], any gradient, or a fully custom painter `FnMut`.
     pub fn set_background(&mut self, brush: impl Into<BackgroundBrush>) {
         self.widget.background = Some(brush.into());
         self.ctx.request_paint();
@@ -231,14 +222,7 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
     }
 
     /// Paint a border around the widget with a color and width.
-    ///
-    /// Arguments can be either concrete values, or a [`Key`] of the respective
-    /// type.
-    pub fn set_border(
-        &mut self,
-        color: impl Into<Color>,
-        width: impl Into<f64>,
-    ) {
+    pub fn set_border(&mut self, color: impl Into<Color>, width: impl Into<f64>) {
         self.widget.border = Some(BorderStyle {
             color: color.into(),
             width: width.into(),
@@ -411,7 +395,7 @@ impl BackgroundBrush {
 
 impl From<Color> for BackgroundBrush {
     fn from(src: Color) -> BackgroundBrush {
-        BackgroundBrush::Color(src.into())
+        BackgroundBrush::Color(src)
     }
 }
 
@@ -445,7 +429,7 @@ impl From<PaintBrush> for BackgroundBrush {
             PaintBrush::Linear(grad) => BackgroundBrush::Linear(grad),
             PaintBrush::Radial(grad) => BackgroundBrush::Radial(grad),
             PaintBrush::Fixed(grad) => BackgroundBrush::Fixed(grad),
-            PaintBrush::Color(color) => BackgroundBrush::Color(color.into()),
+            PaintBrush::Color(color) => BackgroundBrush::Color(color),
         }
     }
 }

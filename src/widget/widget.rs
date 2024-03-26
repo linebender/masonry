@@ -12,8 +12,8 @@ use tracing::{trace_span, Span};
 use crate::event::StatusChange;
 use crate::widget::WidgetRef;
 use crate::{
-    AsAny, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Size, WidgetCtx,
+    AsAny, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    Size, WidgetCtx,
 };
 
 /// A unique identifier for a single [`Widget`].
@@ -50,8 +50,7 @@ pub struct WidgetId(NonZeroU64);
 /// widget is laid out and displayed, methods `[layout]` and `[paint]` are called.
 ///
 /// These trait methods are provided with a corresponding context. The widget can
-/// request things and cause actions by calling methods on that context. In
-/// addition, these methods are provided with an environment ([`Env`]).
+/// request things and cause actions by calling methods on that context.
 ///
 /// Widgets also have a `children()` method. Leaf widgets return an empty array,
 /// whereas container widgets return an array of [`WidgetRef`]. Container widgets

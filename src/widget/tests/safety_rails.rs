@@ -104,7 +104,7 @@ fn check_forget_to_recurse_paint() {
 #[cfg(FALSE)]
 #[test]
 fn allow_non_recurse_event_handled() {
-    let widget = make_parent_widget(Flex::row()).event_fn(|_child, ctx, event, _| {
+    let widget = make_parent_widget(Flex::row()).event_fn(|_child, ctx, event| {
         // Event handled, we don't need to recurse
         ctx.set_handled();
     });
@@ -117,14 +117,14 @@ fn allow_non_recurse_event_handled() {
 #[test]
 fn allow_non_recurse_cursor_oob() {
     let widget = make_parent_widget(Flex::row())
-        .event_fn(|child, ctx, event, env| {
+        .event_fn(|child, ctx, event| {
             if !matches!(event, Event::MouseMove(_)) {
-                child.on_event(ctx, event, env);
+                child.on_event(ctx, event);
             }
         })
-        .layout_fn(|child, ctx, bc, env| {
-            let _size = child.layout(ctx, bc, env);
-            ctx.place_child(child, Point::ZERO, env);
+        .layout_fn(|child, ctx, bc| {
+            let _size = child.layout(ctx, bc);
+            ctx.place_child(child, Point::ZERO);
             Size::new(6000.0, 6000.0)
         });
 
@@ -139,9 +139,9 @@ fn allow_non_recurse_oob_paint() {
         .paint_fn(|child, ctx, _| {
             // We forget to call child.paint();
         })
-        .layout_fn(|child, ctx, bc, env| {
-            let _size = child.layout(ctx, bc, env);
-            ctx.place_child(child, Point::new(500.0, 500.0), env);
+        .layout_fn(|child, ctx, bc| {
+            let _size = child.layout(ctx, bc);
+            ctx.place_child(child, Point::new(500.0, 500.0));
             Size::new(600.0, 600.0)
         });
 
@@ -236,8 +236,8 @@ fn check_forget_children_changed() {
 #[should_panic]
 #[test]
 fn check_recurse_event_twice() {
-    let widget = make_parent_widget(Flex::row()).event_fn(|child, ctx, event, env| {
-        child.on_event(ctx, event, env);
+    let widget = make_parent_widget(Flex::row()).event_fn(|child, ctx, event| {
+        child.on_event(ctx, event);
     });
 
     let mut harness = TestHarness::create(widget);
@@ -248,8 +248,8 @@ fn check_recurse_event_twice() {
 #[should_panic]
 #[test]
 fn check_recurse_lifecycle_twice() {
-    let widget = make_parent_widget(Flex::row()).lifecycle_fn(|child, ctx, event, env| {
-        child.lifecycle(ctx, event, env);
+    let widget = make_parent_widget(Flex::row()).lifecycle_fn(|child, ctx, event| {
+        child.lifecycle(ctx, event);
     });
 
     let _harness = TestHarness::create(widget);
@@ -259,9 +259,9 @@ fn check_recurse_lifecycle_twice() {
 #[should_panic]
 #[test]
 fn check_recurse_layout_twice() {
-    let widget = make_parent_widget(Flex::row()).layout_fn(|child, ctx, bc, env| {
-        let size = child.layout(ctx, bc, env);
-        ctx.place_child(child, Point::ZERO, env);
+    let widget = make_parent_widget(Flex::row()).layout_fn(|child, ctx, bc| {
+        let size = child.layout(ctx, bc);
+        ctx.place_child(child, Point::ZERO);
         size
     });
 
@@ -272,8 +272,8 @@ fn check_recurse_layout_twice() {
 #[should_panic]
 #[test]
 fn check_recurse_paint_twice() {
-    let widget = make_parent_widget(Flex::row()).paint_fn(|child, ctx, env| {
-        child.paint(ctx, env);
+    let widget = make_parent_widget(Flex::row()).paint_fn(|child, ctx| {
+        child.paint(ctx);
     });
 
     let mut harness = TestHarness::create(widget);
@@ -324,9 +324,9 @@ fn check_paint_stashed() {
 #[test]
 fn check_paint_rect_includes_children() {
     use crate::widget::Label;
-    let widget = make_parent_widget(Label::new("Hello world")).layout_fn(|child, ctx, bc, env| {
-        let _size = child.layout(ctx, bc, env);
-        ctx.place_child(child, Point::ZERO, env);
+    let widget = make_parent_widget(Label::new("Hello world")).layout_fn(|child, ctx, bc| {
+        let _size = child.layout(ctx, bc);
+        ctx.place_child(child, Point::ZERO);
         Size::ZERO
     });
 

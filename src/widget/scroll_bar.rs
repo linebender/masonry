@@ -12,8 +12,8 @@ use tracing::{trace_span, Span};
 use super::Axis;
 use crate::widget::WidgetRef;
 use crate::{
-    theme, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, RenderContext, Selector, Size, StatusChange, Widget,
+    theme, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    RenderContext, Selector, Size, StatusChange, Widget,
 };
 
 // RULES
@@ -194,9 +194,7 @@ impl Widget for ScrollBar {
 
     fn paint(&mut self, ctx: &mut PaintCtx) {
         let brush = ctx.render_ctx.solid_brush(theme::SCROLLBAR_COLOR);
-        let border_brush = ctx
-            .render_ctx
-            .solid_brush(theme::SCROLLBAR_BORDER_COLOR);
+        let border_brush = ctx.render_ctx.solid_brush(theme::SCROLLBAR_BORDER_COLOR);
 
         let radius = theme::SCROLLBAR_RADIUS;
         let edge_width = theme::SCROLLBAR_EDGE_WIDTH;

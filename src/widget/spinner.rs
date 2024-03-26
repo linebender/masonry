@@ -12,8 +12,8 @@ use tracing::trace;
 use crate::kurbo::Line;
 use crate::widget::WidgetRef;
 use crate::{
-    theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, RenderContext, Size, StatusChange, Vec2, Widget,
+    theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, RenderContext, Size, StatusChange, Vec2, Widget,
 };
 
 // TODO - Set color
@@ -63,7 +63,7 @@ impl Default for Spinner {
     fn default() -> Self {
         Spinner {
             t: 0.0,
-            color: theme::TEXT_COLOR.into(),
+            color: theme::TEXT_COLOR,
         }
     }
 }

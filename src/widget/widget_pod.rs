@@ -12,7 +12,9 @@ use crate::text::TextLayout;
 use crate::theme::get_debug_color;
 use crate::widget::{FocusChange, WidgetRef, WidgetState};
 use crate::{
-    ArcStr, BoxConstraints, Color, Event, EventCtx, InternalEvent, InternalLifeCycle, LayoutCtx, LifeCycle, LifeCycleCtx, Notification, PaintCtx, RenderContext, StatusChange, Target, Widget, WidgetId
+    ArcStr, BoxConstraints, Color, Event, EventCtx, InternalEvent, InternalLifeCycle, LayoutCtx,
+    LifeCycle, LifeCycleCtx, Notification, PaintCtx, RenderContext, StatusChange, Target, Widget,
+    WidgetId,
 };
 
 // TODO - rewrite links in doc
@@ -254,14 +256,6 @@ impl<W: Widget> WidgetPod<W> {
                 widget_state: inner_state,
             };
 
-            // TODO Env removal
-            /*
-            // if hot changes and we're showing widget ids, always repaint
-            if env.get(Env::DEBUG_WIDGET_ID) {
-                inner_ctx.request_paint();
-            }
-            */
-
             let _span = info_span!("on_status_change").entered();
             inner.on_status_change(&mut inner_ctx, &hot_changed_event);
 
@@ -392,7 +386,6 @@ impl<W: Widget> WidgetPod<W> {
                         parent_ctx.global_state,
                         rect,
                         None,
-                        
                     );
                     had_active || hot_changed
                 }
@@ -452,7 +445,6 @@ impl<W: Widget> WidgetPod<W> {
                     parent_ctx.global_state,
                     rect,
                     Some(mouse_event.pos),
-                    
                 );
                 if (had_active || self.state.is_hot) && !self.state.is_stashed {
                     let mut mouse_event = mouse_event.clone();
@@ -470,7 +462,6 @@ impl<W: Widget> WidgetPod<W> {
                     parent_ctx.global_state,
                     rect,
                     Some(mouse_event.pos),
-                    
                 );
                 if (had_active || self.state.is_hot) && !self.state.is_stashed {
                     let mut mouse_event = mouse_event.clone();
@@ -488,7 +479,6 @@ impl<W: Widget> WidgetPod<W> {
                     parent_ctx.global_state,
                     rect,
                     Some(mouse_event.pos),
-                    
                 );
                 // MouseMove is recursed even if the widget is not active and not hot,
                 // but was hot previously. This is to allow the widget to respond to the movement,
@@ -509,7 +499,6 @@ impl<W: Widget> WidgetPod<W> {
                     parent_ctx.global_state,
                     rect,
                     Some(mouse_event.pos),
-                    
                 );
                 if (had_active || self.state.is_hot) && !self.state.is_stashed {
                     let mut mouse_event = mouse_event.clone();
@@ -561,7 +550,7 @@ impl<W: Widget> WidgetPod<W> {
 
                 // TODO - there's some dubious logic here
                 if let Some(target_rect) = inner_ctx.request_pan_to_child {
-                    widget_pod.pan_to_child(parent_ctx,  target_rect);
+                    widget_pod.pan_to_child(parent_ctx, target_rect);
                     let new_rect = target_rect
                         .with_origin(target_rect.origin() + widget_pod.state.origin.to_vec2());
                     parent_ctx.request_pan_to_child = Some(new_rect);
@@ -607,7 +596,6 @@ impl<W: Widget> WidgetPod<W> {
         &mut self,
         parent_ctx: &mut EventCtx,
         notifications: &mut VecDeque<Notification>,
-        
     ) {
         let self_id = self.id();
 
@@ -710,11 +698,9 @@ impl<W: Widget> WidgetPod<W> {
                                 widget_state: &mut widget_pod.state,
                             };
 
-                            widget_pod.inner.lifecycle(
-                                &mut inner_ctx,
-                                &LifeCycle::DisabledChanged(disabled),
-                                
-                            );
+                            widget_pod
+                                .inner
+                                .lifecycle(&mut inner_ctx, &LifeCycle::DisabledChanged(disabled));
                         });
                         //Each widget needs only one of DisabledChanged and RouteDisabledChanged
                         false
@@ -1039,12 +1025,10 @@ impl<W: Widget> WidgetPod<W> {
     pub fn paint_raw(&mut self, ctx: &mut PaintCtx) {
         self.mark_as_visited();
 
-        // TODO env removal
-        /*
         // we need to do this before we borrow from self
-        if get(Env::DEBUG_WIDGET_ID) {
+        if ctx.debug_widget_id {
             self.make_widget_id_layout_if_needed(self.state.id, ctx);
-        }*/
+        }
 
         self.call_widget_method_with_checks("paint", |widget_pod| {
             // widget_pod is a reborrow of `self`
@@ -1056,21 +1040,21 @@ impl<W: Widget> WidgetPod<W> {
                 z_ops: Vec::new(),
                 region: ctx.region.clone(),
                 depth: ctx.depth,
+                debug_paint: ctx.debug_paint,
+                debug_widget: ctx.debug_widget,
+                debug_widget_id: ctx.debug_widget_id,
             };
             widget_pod.inner.paint(&mut inner_ctx);
 
-            // TODO: Env removal
-            /*
-            let debug_ids = widget_pod.state.is_hot && env.get(Env::DEBUG_WIDGET_ID);
+            let debug_ids = widget_pod.state.is_hot && ctx.debug_widget_id;
             if debug_ids {
                 // this also draws layout bounds
                 widget_pod.debug_paint_widget_ids(&mut inner_ctx);
             }
 
-            if !debug_ids && env.get(Env::DEBUG_PAINT) {
+            if !debug_ids && ctx.debug_paint {
                 widget_pod.debug_paint_layout_bounds(&mut inner_ctx);
             }
-            */
 
             ctx.z_ops.append(&mut inner_ctx.z_ops);
         });
@@ -1081,14 +1065,14 @@ impl<W: Widget> WidgetPod<W> {
     /// This will recursively paint widgets, stopping if a widget's layout
     /// rect is outside of the currently visible region.
     pub fn paint(&mut self, parent_ctx: &mut PaintCtx) {
-        self.paint_impl(parent_ctx,  false)
+        self.paint_impl(parent_ctx, false)
     }
 
     // TODO - remove
     /// Paint the widget, even if its paint rect is outside of the currently
     /// visible region.
     pub fn paint_always(&mut self, parent_ctx: &mut PaintCtx) {
-        self.paint_impl(parent_ctx,  true)
+        self.paint_impl(parent_ctx, true)
     }
 
     /// Shared implementation that can skip drawing non-visible content.
@@ -1160,7 +1144,7 @@ impl<W: Widget> WidgetPod<W> {
     }
 
     fn debug_paint_layout_bounds(&self, ctx: &mut PaintCtx) {
-        const BORDER_WIDTH: f64 = 1.0; 
+        const BORDER_WIDTH: f64 = 1.0;
         let rect = ctx.size().to_rect().inset(BORDER_WIDTH / -2.0);
         let id = self.id().to_raw();
         let color = get_debug_color(id);

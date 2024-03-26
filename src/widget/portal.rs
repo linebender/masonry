@@ -13,8 +13,8 @@ use crate::kurbo::{Point, Rect, Size, Vec2};
 use crate::widget::scroll_bar::SCROLLBAR_MOVED;
 use crate::widget::{Axis, ScrollBar, StoreInWidgetMut, WidgetMut, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    RenderContext, StatusChange, Widget, WidgetPod,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext,
+    StatusChange, Widget, WidgetPod,
 };
 
 // TODO - refactor - see issue #15

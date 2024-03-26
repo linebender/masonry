@@ -55,7 +55,7 @@ impl PromiseButton {
             text_layout,
             line_break_mode: LineBreaking::Overflow,
             promise_token: PromiseToken::empty(),
-            default_text_color: masonry::theme::TEXT_COLOR.into(),
+            default_text_color: masonry::theme::TEXT_COLOR,
         }
     }
 }
@@ -105,7 +105,7 @@ impl Widget for PromiseButton {
                 let color = if *disabled {
                     masonry::theme::DISABLED_TEXT_COLOR
                 } else {
-                    self.default_text_color.clone()
+                    self.default_text_color
                 };
                 self.text_layout.set_text_color(color);
                 ctx.request_layout();

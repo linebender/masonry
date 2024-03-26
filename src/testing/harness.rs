@@ -8,10 +8,7 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use druid_shell::{KeyEvent, Modifiers, MouseButton, MouseButtons};
-pub use druid_shell::{
-    RawMods, Region, Scalable, Scale, Screen, SysMods, TimerToken, WindowHandle, WindowLevel,
-    WindowState,
-};
+pub use druid_shell::{RawMods, Region};
 use image::io::Reader as ImageReader;
 use instant::Duration;
 use shell::text::Selection;
@@ -84,21 +81,26 @@ pub const HARNESS_DEFAULT_SIZE: Size = Size::new(400., 400.);
 /// use insta::assert_debug_snapshot;
 ///
 /// use masonry::widget::Button;
+/// use masonry::Action;
 /// use masonry::assert_render_snapshot;
 /// use masonry::testing::widget_ids;
 /// use masonry::testing::TestHarness;
 /// use masonry::testing::TestWidgetExt;
 /// use masonry::theme::PRIMARY_LIGHT;
 ///
+/// # /*
 /// #[test]
+/// # */
 /// fn simple_button() {
 ///     let [button_id] = widget_ids();
 ///     let widget = Button::new("Hello").with_id(button_id);
 ///
 ///     let mut harness = TestHarness::create(widget);
 ///
+///     # if false {
 ///     assert_debug_snapshot!(harness.root_widget());
 ///     assert_render_snapshot!(harness, "hello");
+///     # }
 ///
 ///     assert_eq!(harness.pop_action(), None);
 ///
@@ -108,6 +110,8 @@ pub const HARNESS_DEFAULT_SIZE: Size = Size::new(400., 400.);
 ///         Some((Action::ButtonPressed, button_id))
 ///     );
 /// }
+///
+/// # simple_button();
 /// ```
 // TODO - Fix examples
 pub struct TestHarness {

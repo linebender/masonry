@@ -89,5 +89,5 @@ static DEBUG_COLOR: &[Color] = &[
 
 pub fn get_debug_color(id: u64) -> Color {
     let color_num = id as usize % DEBUG_COLOR.len();
-    DEBUG_COLOR[color_num].clone()
+    DEBUG_COLOR[color_num]
 }

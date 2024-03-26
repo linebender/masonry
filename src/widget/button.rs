@@ -10,8 +10,8 @@ use tracing::{trace, trace_span, Span};
 use crate::action::Action;
 use crate::widget::{Label, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
-    theme, ArcStr, BoxConstraints, Event, EventCtx, Insets, LayoutCtx, LifeCycle,
-    LifeCycleCtx, LinearGradient, PaintCtx, RenderContext, Size, StatusChange, UnitPoint, Widget,
+    theme, ArcStr, BoxConstraints, Event, EventCtx, Insets, LayoutCtx, LifeCycle, LifeCycleCtx,
+    LinearGradient, PaintCtx, RenderContext, Size, StatusChange, UnitPoint, Widget,
 };
 
 // the minimum padding added to a button.
@@ -141,10 +141,7 @@ impl Widget for Button {
             LinearGradient::new(
                 UnitPoint::TOP,
                 UnitPoint::BOTTOM,
-                (
-                    theme::DISABLED_BUTTON_LIGHT,
-                    theme::DISABLED_BUTTON_DARK,
-                ),
+                (theme::DISABLED_BUTTON_LIGHT, theme::DISABLED_BUTTON_DARK),
             )
         } else if is_active {
             LinearGradient::new(

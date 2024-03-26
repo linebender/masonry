@@ -33,7 +33,6 @@ use crate::{PaintCtx, RenderContext};
 /// [`update`]: trait.Widget.html#tymethod.update
 /// [`needs_rebuild_after_update`]: #method.needs_rebuild_after_update
 /// [`rebuild_if_needed`]: #method.rebuild_if_needed
-/// [`Env`]: struct.Env.html
 #[derive(Clone)]
 pub struct TextLayout<T> {
     // TODO - remove Option
@@ -93,12 +92,9 @@ impl<T> TextLayout<T> {
 
     /// Set the default font.
     ///
-    /// The argument is a [`FontDescriptor`] or a [`Key<FontDescriptor>`] that
-    /// can be resolved from the [`Env`].
+    /// The argument is a [`FontDescriptor`].
     ///
     /// [`FontDescriptor`]: struct.FontDescriptor.html
-    /// [`Env`]: struct.Env.html
-    /// [`Key<FontDescriptor>`]: struct.Key.html
     pub fn set_font(&mut self, font: FontDescriptor) {
         if font != self.font {
             self.font = font;
@@ -175,7 +171,7 @@ impl<T: TextStorage> TextLayout<T> {
 
     /// Set the text to display.
     pub fn set_text(&mut self, text: T) {
-        if self.text.is_none() || !self.text.as_ref().unwrap().eq(&text) {
+        if self.text.is_none() || !self.text.as_ref().unwrap().maybe_eq(&text) {
             self.text_is_rtl = crate::piet::util::first_strong_rtl(text.as_str());
             self.text = Some(text);
             self.layout = None;

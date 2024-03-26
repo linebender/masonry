@@ -12,8 +12,8 @@ use crate::kurbo::{BezPath, Size};
 use crate::piet::{LineCap, LineJoin, LinearGradient, RenderContext, StrokeStyle, UnitPoint};
 use crate::widget::{Label, WidgetMut, WidgetRef};
 use crate::{
-    theme, ArcStr, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, StatusChange, Widget, WidgetPod,
+    theme, ArcStr, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    StatusChange, Widget, WidgetPod,
 };
 
 /// A checkbox that can be toggled.
@@ -122,10 +122,7 @@ impl Widget for Checkbox {
         let background_gradient = LinearGradient::new(
             UnitPoint::TOP,
             UnitPoint::BOTTOM,
-            (
-                theme::BACKGROUND_LIGHT,
-                theme::BACKGROUND_DARK,
-            ),
+            (theme::BACKGROUND_LIGHT, theme::BACKGROUND_DARK),
         );
 
         ctx.fill(rect, &background_gradient);

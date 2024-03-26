@@ -12,8 +12,8 @@ use crate::kurbo::Line;
 use crate::widget::flex::Axis;
 use crate::widget::{WidgetPod, WidgetRef};
 use crate::{
-    theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Point, Rect, RenderContext, Size, StatusChange, Widget,
+    theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, Rect, RenderContext, Size, StatusChange, Widget,
 };
 
 // TODO - Have child widget type as generic argument

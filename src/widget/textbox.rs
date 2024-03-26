@@ -17,8 +17,8 @@ use crate::shell::{HotKey, KeyEvent, SysMods, TimerToken};
 use crate::text::{ImeInvalidation, Selection, TextAlignment, TextComponent, TextLayout};
 use crate::widget::{Portal, WidgetMut, WidgetRef};
 use crate::{
-    theme, ArcStr, BoxConstraints, Command, Event, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, Rect, Size, StatusChange, Vec2, Widget, WidgetPod,
+    theme, ArcStr, BoxConstraints, Command, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, Point, Rect, Size, StatusChange, Vec2, Widget, WidgetPod,
 };
 
 const CURSOR_BLINK_DURATION: Duration = Duration::from_millis(500);
@@ -148,14 +148,7 @@ impl TextBox {
     }
 
     /// Builder-style method for setting the font.
-    ///
-    /// The argument can be a [`FontDescriptor`] or a [`Key<FontDescriptor>`]
-    /// that refers to a font defined in the [`Env`].
-    ///
-    /// [`Env`]: ../struct.Env.html
-    /// [`FontDescriptor`]: ../struct.FontDescriptor.html
-    /// [`Key<FontDescriptor>`]: ../struct.Key.html
-    pub fn with_font(mut self, font: impl Into<KeyOrValue<FontDescriptor>>) -> Self {
+    pub fn with_font(mut self, font: FontDescriptor) -> Self {
         self.set_font(font);
         self
     }
@@ -190,19 +183,11 @@ impl TextBox {
     }
 
     /// Set the font.
-    ///
-    /// The argument can be a [`FontDescriptor`] or a [`Key<FontDescriptor>`]
-    /// that refers to a font defined in the [`Env`].
-    ///
-    /// [`Env`]: ../struct.Env.html
-    /// [`FontDescriptor`]: ../struct.FontDescriptor.html
-    /// [`Key<FontDescriptor>`]: ../struct.Key.html
-    pub fn set_font(&mut self, font: impl Into<KeyOrValue<FontDescriptor>>) {
+    pub fn set_font(&mut self, font: FontDescriptor) {
         if !self.inner.as_ref().child().can_write() {
             tracing::warn!("set_font called with IME lock held.");
             return;
         }
-        let font = font.into();
         self.text_mut().borrow_mut().layout.set_font(font.clone());
         self.placeholder_layout.set_font(font);
     }

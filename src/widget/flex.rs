@@ -4,15 +4,17 @@
 
 //! A widget that arranges its children in a one-dimensional array.
 
+use piet_common::RenderContext;
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
 
 use crate::kurbo::common::FloatExt;
 use crate::kurbo::Vec2;
+use crate::theme::get_debug_color;
 use crate::widget::{WidgetMut, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Point, Rect, Size, StatusChange, Widget, WidgetId, WidgetPod,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, Rect,
+    Size, StatusChange, Widget, WidgetId, WidgetPod,
 };
 
 /// A container with either horizontal or vertical layout.
@@ -209,10 +211,10 @@ impl Flex {
     ///
     /// [`add_default_spacer`]: #method.add_default_spacer
     pub fn with_spacer(mut self, mut len: f64) -> Self {
-            if len < 0.0 {
-                tracing::warn!("add_spacer called with negative length: {}", len);
-            }
-            len = len.clamp(0.0, f64::MAX);
+        if len < 0.0 {
+            tracing::warn!("add_spacer called with negative length: {}", len);
+        }
+        len = len.clamp(0.0, f64::MAX);
 
         let new_child = Child::FixedSpacer(len, 0.0);
         self.children.push(new_child);
@@ -333,11 +335,10 @@ impl<'a, 'b> FlexMut<'a, 'b> {
     ///
     /// [`add_default_spacer`]: Flex::add_default_spacer
     pub fn add_spacer(&mut self, mut len: f64) {
-
-            if len < 0.0 {
-                tracing::warn!("add_spacer called with negative length: {}", len);
-            }
-            len = len.clamp(0.0, f64::MAX);
+        if len < 0.0 {
+            tracing::warn!("add_spacer called with negative length: {}", len);
+        }
+        len = len.clamp(0.0, f64::MAX);
 
         let new_child = Child::FixedSpacer(len, 0.0);
         self.widget.children.push(new_child);
@@ -424,10 +425,10 @@ impl<'a, 'b> FlexMut<'a, 'b> {
     ///
     /// [`add_default_spacer`]: Flex::add_default_spacer
     pub fn insert_spacer(&mut self, idx: usize, mut len: f64) {
-            if len < 0.0 {
-                tracing::warn!("add_spacer called with negative length: {}", len);
-            }
-            len = len.clamp(0.0, f64::MAX);
+        if len < 0.0 {
+            tracing::warn!("add_spacer called with negative length: {}", len);
+        }
+        len = len.clamp(0.0, f64::MAX);
 
         let new_child = Child::FixedSpacer(len, 0.0);
         self.widget.children.insert(idx, new_child);
@@ -690,17 +691,14 @@ impl Widget for Flex {
             child.paint(ctx);
         }
 
-        // TODO remove env
-        /*
         // paint the baseline if we're debugging layout
-        if env.get(Env::DEBUG_PAINT) && ctx.widget_state.baseline_offset != 0.0 {
-            let color = env.get_debug_color(ctx.widget_id().to_raw());
+        if ctx.debug_paint && ctx.widget_state.baseline_offset != 0.0 {
+            let color = get_debug_color(ctx.widget_id().to_raw());
             let my_baseline = ctx.size().height - ctx.widget_state.baseline_offset;
             let line = crate::kurbo::Line::new((0.0, my_baseline), (ctx.size().width, my_baseline));
             let stroke_style = crate::piet::StrokeStyle::new().dash_pattern(&[4.0, 4.0]);
             ctx.stroke_styled(line, &color, 1.0, &stroke_style);
         }
-        */
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

@@ -12,8 +12,7 @@ use crate::command::{Command, CommandQueue};
 use crate::ext_event::{ExtEventQueue, ExtEventSink};
 use crate::widget::{StoreInWidgetMut, WidgetMut, WidgetRef};
 use crate::{
-    Event, Handled, SingleUse, Target, Widget, WidgetId, WindowDescription, WindowId,
-    WindowRoot,
+    Event, Handled, SingleUse, Target, Widget, WidgetId, WindowDescription, WindowId, WindowRoot,
 };
 
 /// A context provided to [`AppDelegate`] methods.
@@ -77,12 +76,7 @@ pub trait AppDelegate {
     ///
     /// This function receives all non-command events, before they are passed down
     /// the tree. If it returns [`Handled::Yes`], events are short-circuited.
-    fn on_event(
-        &mut self,
-        ctx: &mut DelegateCtx,
-        window_id: WindowId,
-        event: &Event,
-    ) -> Handled {
+    fn on_event(&mut self, ctx: &mut DelegateCtx, window_id: WindowId, event: &Event) -> Handled {
         #![allow(unused)]
         Handled::No
     }

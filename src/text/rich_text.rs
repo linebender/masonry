@@ -7,15 +7,13 @@
 use std::ops::{Range, RangeBounds};
 use std::sync::Arc;
 
-use piet_common::cairo::glib::subclass::shared::RefCounted;
-
 use super::attribute::Link;
 use super::{Attribute, AttributeSpans, FontDescriptor, TextStorage};
 use crate::piet::{
     util, Color, FontFamily, FontStyle, FontWeight, PietTextLayoutBuilder, TextLayoutBuilder,
     TextStorage as PietTextStorage,
 };
-use crate::{ArcStr};
+use crate::ArcStr;
 
 /// Text with optional style spans.
 #[derive(Clone, Debug)]
@@ -24,14 +22,6 @@ pub struct RichText {
     attrs: Arc<AttributeSpans>,
     links: Arc<[Link]>,
 }
-
-impl PartialEq for RichText {
-    fn eq(&self, other: &Self) -> bool {
-        Arc::ptr_eq(&self.buffer, &other.buffer) && Arc::ptr_eq(&self.attrs, &other.attrs) && Arc::ptr_eq(&self.links, &other.links)
-    }
-}
-
-impl Eq for RichText {}
 
 impl RichText {
     /// Create a new `RichText` object with the provided text.
@@ -82,10 +72,7 @@ impl PietTextStorage for RichText {
 }
 
 impl TextStorage for RichText {
-    fn add_attributes(
-        &self,
-        mut builder: PietTextLayoutBuilder,
-    ) -> PietTextLayoutBuilder {
+    fn add_attributes(&self, mut builder: PietTextLayoutBuilder) -> PietTextLayoutBuilder {
         for (range, attr) in self.attrs.to_piet_attrs() {
             builder = builder.range_attribute(range, attr);
         }
@@ -94,6 +81,12 @@ impl TextStorage for RichText {
 
     fn links(&self) -> &[Link] {
         &self.links
+    }
+
+    fn maybe_eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.buffer, &other.buffer)
+            && Arc::ptr_eq(&self.attrs, &other.attrs)
+            && Arc::ptr_eq(&self.links, &other.links)
     }
 }
 
