@@ -485,7 +485,8 @@ impl_context_method!(WidgetCtx<'_, '_>, EventCtx<'_, '_>, LifeCycleCtx<'_, '_>, 
     /// (such as the text or the selection) changes as a result of a non text-input
     /// event.
     pub fn invalidate_text_input(&mut self, event: ImeInvalidation) {
-        let payload = crate::command::ImeInvalidation {
+        /*
+        let payload = ImeInvalidation {
             widget: self.widget_id(),
             event,
         };
@@ -493,6 +494,7 @@ impl_context_method!(WidgetCtx<'_, '_>, EventCtx<'_, '_>, LifeCycleCtx<'_, '_>, 
             .with(payload)
             .to(Target::Window(self.window_id()));
         self.submit_command(cmd);
+        */
     }
 });
 

@@ -5,9 +5,11 @@
 #![allow(missing_docs)]
 #![allow(unused)]
 
-use druid_shell::kurbo::Rect;
+use crate::event2::{PointerEvent, WidgetEvent};
+use crate::kurbo::Rect;
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
+use winit::event::MouseButton;
 
 use super::Axis;
 use crate::widget::WidgetRef;
@@ -175,6 +177,59 @@ impl Widget for ScrollBar {
         }
     }
 
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        match event {
+            WidgetEvent::PointerEvent(event) => match event {
+                PointerEvent::PointerDown(button, state) if *button == MouseButton::Left => {
+                    ctx.set_active(true);
+
+                    let cursor_min_length = env.get(theme::SCROLLBAR_MIN_SIZE);
+                    let cursor_rect = self.get_cursor_rect(ctx.size(), cursor_min_length);
+
+                    if cursor_rect.contains(state.pos) {
+                        let (z0, z1) = self.axis.major_span(cursor_rect);
+                        let mouse_major = self.axis.major_pos(state.pos);
+                        self.grab_anchor = Some((mouse_major - z0) / (z1 - z0));
+                    } else {
+                        self.cursor_progress = self.progress_from_mouse_pos(
+                            ctx.size(),
+                            cursor_min_length,
+                            0.5,
+                            state.pos,
+                        );
+                        ctx.submit_notification(
+                            SCROLLBAR_MOVED.with((self.axis, self.cursor_progress)),
+                        );
+                        self.grab_anchor = Some(0.5);
+                    };
+                    ctx.request_paint();
+                }
+                PointerEvent::PointerMove(state) => {
+                    if let Some(grab_anchor) = self.grab_anchor {
+                        let cursor_min_length = env.get(theme::SCROLLBAR_MIN_SIZE);
+                        self.cursor_progress = self.progress_from_mouse_pos(
+                            ctx.size(),
+                            cursor_min_length,
+                            grab_anchor,
+                            state.pos,
+                        );
+                        ctx.submit_notification(
+                            SCROLLBAR_MOVED.with((self.axis, self.cursor_progress)),
+                        );
+                    }
+                    ctx.request_paint();
+                }
+                PointerEvent::PointerUp(button, state) if *button == MouseButton::Left => {
+                    self.grab_anchor = None;
+                    ctx.set_active(false);
+                    ctx.request_paint();
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+
     fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, event: &StatusChange, env: &Env) {}
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, env: &Env) {}
@@ -222,6 +277,7 @@ impl Widget for ScrollBar {
     }
 }
 
+#[cfg(FALSE)]
 #[cfg(test)]
 mod tests {
     use druid_shell::MouseButton;

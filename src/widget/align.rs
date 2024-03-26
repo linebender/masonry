@@ -9,13 +9,15 @@
 // size constraints to its child means that "aligning" a widget may actually change
 // its computed size. See issue #3.
 
+use piet::UnitPoint;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, Span};
 
+use crate::event2::WidgetEvent;
 use crate::widget::{WidgetPod, WidgetRef};
 use crate::{
     BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, Size,
-    StatusChange, UnitPoint, Widget,
+    StatusChange, Widget,
 };
 
 // TODO - Have child widget type as generic argument
@@ -82,6 +84,10 @@ impl Align {
 impl Widget for Align {
     fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env) {
         self.child.on_event(ctx, event, env)
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        self.child.on_event2(ctx, event, env)
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, env: &Env) {

@@ -6,8 +6,10 @@
 
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use winit::event::MouseButton;
 
 use crate::action::Action;
+use crate::event2::{PointerEvent, WidgetEvent};
 use crate::widget::{Label, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
     theme, ArcStr, BoxConstraints, Env, Event, EventCtx, Insets, LayoutCtx, LifeCycle,
@@ -89,6 +91,30 @@ impl Widget for Button {
                 }
                 ctx.set_active(false);
             }
+            _ => (),
+        }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        match event {
+            WidgetEvent::PointerEvent(event) => match event {
+                PointerEvent::PointerDown(button, state) if button == MouseButton::Left => {
+                    if !ctx.is_disabled() {
+                        ctx.set_active(true);
+                        ctx.request_paint();
+                        trace!("Button {:?} pressed", ctx.widget_id());
+                    }
+                }
+                PointerEvent::PointerUp(button, state) if button == MouseButton::Left => {
+                    if ctx.is_active() && !ctx.is_disabled() {
+                        ctx.submit_action(Action::ButtonPressed);
+                        ctx.request_paint();
+                        trace!("Button {:?} released", ctx.widget_id());
+                    }
+                    ctx.set_active(false);
+                }
+                _ => (),
+            },
             _ => (),
         }
     }

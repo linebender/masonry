@@ -2,6 +2,8 @@
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
 
+#![cfg(FALSE)]
+
 //! A textbox widget.
 
 use std::sync::Arc;
@@ -13,7 +15,6 @@ use tracing::{trace_span, Span};
 use crate::action::Action;
 use crate::kurbo::{Affine, Insets};
 use crate::piet::{RenderContext as _, TextLayout as _};
-use crate::shell::{HotKey, KeyEvent, SysMods, TimerToken};
 use crate::text::{ImeInvalidation, Selection, TextAlignment, TextComponent, TextLayout};
 use crate::widget::{Portal, WidgetMut, WidgetRef};
 use crate::{

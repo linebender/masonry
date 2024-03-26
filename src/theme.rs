@@ -6,9 +6,9 @@
 
 #![allow(missing_docs)]
 
-use crate::piet::{Color, FontFamily, FontStyle, FontWeight};
 use crate::text::FontDescriptor;
 use crate::{Env, Insets, Key};
+use piet::{Color, FontFamily, FontStyle, FontWeight};
 
 pub const WINDOW_BACKGROUND_COLOR: Key<Color> =
     Key::new("org.masonry.theme.window_background_color");

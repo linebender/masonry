@@ -22,12 +22,15 @@ pub enum WindowEvent {
     AnimFrame,
 }
 
+// TODO - Move AnimFrame to Lifecycle
+
 // TODO - How can RenderRoot express "I started a drag-and-drop op"?
 // TODO - Touchpad, Touch, AxisMotion
 // TODO - How to handle CursorEntered?
 // Note to self: Events like "pointerenter", "pointerleave" are handled differently at the Widget level. But that's weird because WidgetPod can distribute them. Need to think about this again.
 pub enum PointerEvent {
-    PointerInput(MouseButton, PointerState),
+    PointerDown(MouseButton, PointerState),
+    PointerUp(MouseButton, PointerState),
     PointerMove(PointerState),
     PointerEnter(PointerState),
     PointerLeave(PointerState),
@@ -35,6 +38,17 @@ pub enum PointerEvent {
     HoverFile(PathBuf, PointerState),
     DropFile(PathBuf, PointerState),
     HoverFileCancel(PointerState),
+}
+
+// TODO - Clipboard Paste?
+// TODO skip is_synthetic=true events
+#[derive(Debug, Clone)]
+pub enum TextEvent {
+    KeyboardKey(KeyEvent, ModifiersState),
+    Ime(Ime),
+    ModifierChange(ModifiersState),
+    // TODO - Document difference with Lifecycle focus change
+    FocusChange(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -47,15 +61,12 @@ pub struct PointerState {
     pub focus: bool,
 }
 
-// TODO - Clipboard Paste?
-// TODO skip is_synthetic=true events
+// FIXME - Remove this
 #[derive(Debug, Clone)]
-pub enum TextEvent {
-    KeyboardKey(KeyEvent, ModifiersState),
-    Ime(Ime),
-    ModifierChange(ModifiersState),
-    // TODO - Document difference with Lifecycle focus change
-    FocusChange(bool),
+pub enum WidgetEvent {
+    PointerEvent(PointerEvent),
+    TextEvent(TextEvent),
+    WindowEvent(WindowEvent),
 }
 
 pub enum WindowTheme {

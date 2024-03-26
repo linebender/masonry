@@ -1192,44 +1192,6 @@ impl WindowRoot {
         self.invalid.clear();
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn invalid(&self) -> &Region {
-        &self.invalid
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn invalid_mut(&mut self) -> &mut Region {
-        &mut self.invalid
-    }
-
-    /// Get ready for painting, by doing layout and sending an `AnimFrame` event.
-    pub(crate) fn prepare_paint(
-        &mut self,
-        debug_logger: &mut DebugLogger,
-        command_queue: &mut CommandQueue,
-        action_queue: &mut ActionQueue,
-        env: &Env,
-    ) {
-        let now = Instant::now();
-        // TODO: this calculation uses wall-clock time of the paint call, which
-        // potentially has jitter.
-        //
-        // See https://github.com/linebender/druid/issues/85 for discussion.
-        let last = self.last_anim.take();
-        let elapsed_ns = last.map(|t| now.duration_since(t).as_nanos()).unwrap_or(0) as u64;
-
-        if self.wants_animation_frame() {
-            self.event(
-                Event::AnimFrame(elapsed_ns),
-                debug_logger,
-                command_queue,
-                action_queue,
-                env,
-            );
-            self.last_anim = Some(now);
-        }
-    }
-
     pub(crate) fn do_paint(
         &mut self,
         piet: &mut Piet,

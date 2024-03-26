@@ -152,12 +152,10 @@ pub use sys::*;
 #[allow(dead_code)]
 mod sys {
     use std::any::Any;
-
-    use druid_shell::FileInfo;
+    use std::path::PathBuf;
 
     use super::{Selector, SingleUse};
     use crate::platform::WindowConfig;
-    use crate::WidgetId;
 
     /// Quit the running application. This command is handled by the Masonry library.
     pub const QUIT_APP: Selector = Selector::new("masonry-builtin.quit-app");
@@ -220,7 +218,7 @@ mod sys {
     /// Open a path, must be handled by the application.
     ///
     /// [`FileInfo`]: ../struct.FileInfo.html
-    pub const OPEN_FILE: Selector<FileInfo> = Selector::new("masonry-builtin.open-file-path");
+    pub const OPEN_FILE: Selector<PathBuf> = Selector::new("masonry-builtin.open-file-path");
 
     /// Sent when the user cancels a save file panel.
     pub const SAVE_PANEL_CANCELLED: Selector =
@@ -241,7 +239,7 @@ mod sys {
     ///
     /// The path might be a file or a directory, so always check whether it matches your
     /// expectations.
-    pub const SAVE_FILE_AS: Selector<FileInfo> = Selector::new("masonry-builtin.save-file-as");
+    pub const SAVE_FILE_AS: Selector<PathBuf> = Selector::new("masonry-builtin.save-file-as");
 
     /// Show the print-setup window.
     pub const PRINT_SETUP: Selector = Selector::new("masonry-builtin.menu-file-print-setup");
@@ -270,16 +268,11 @@ mod sys {
     /// Select all.
     pub const SELECT_ALL: Selector = Selector::new("masonry-builtin.menu-select-all");
 
+    /*
     /// Text input state has changed, and we need to notify the platform.
     pub(crate) const INVALIDATE_IME: Selector<ImeInvalidation> =
         Selector::new("masonry-builtin.invalidate-ime");
-
-    /// A change that has occured to text state, and needs to be
-    /// communicated to the platform.
-    pub(crate) struct ImeInvalidation {
-        pub widget: WidgetId,
-        pub event: druid_shell::text::Event,
-    }
+    */
 }
 
 impl Selector<()> {

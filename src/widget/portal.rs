@@ -3,12 +3,14 @@
 // details.
 
 #![allow(missing_docs)]
+#![allow(unused)]
 
 use std::ops::Range;
 
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace_span, Span};
 
+use crate::event2::{PointerEvent, WidgetEvent};
 use crate::kurbo::{Point, Rect, Size, Vec2};
 use crate::widget::scroll_bar::SCROLLBAR_MOVED;
 use crate::widget::{Axis, ScrollBar, StoreInWidgetMut, WidgetMut, WidgetRef};
@@ -273,6 +275,34 @@ impl<W: Widget> Widget for Portal<W> {
         self.scrollbar_horizontal.on_event(ctx, event, env);
         self.scrollbar_vertical.on_event(ctx, event, env);
         ctx.request_layout();
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        let portal_size = ctx.size();
+        let content_size = self.child.layout_rect().size();
+
+        #[cfg(FALSE)]
+        // TODO - handle Home/End keys, etc
+        match event {
+            WidgetEvent::PointerEvent(event) => match event {
+                PointerEvent::MouseWheel(delta, _) => {
+                    self.set_viewport_pos_raw(portal_size, content_size, self.viewport_pos + delta);
+                    // TODO - horizontal scrolling?
+                    ctx.get_mut(&mut self.scrollbar_vertical)
+                        .set_cursor_progress(
+                            self.viewport_pos.y / (content_size - portal_size).height,
+                        );
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+
+        // TODO - Handle notification to scroll to child
+
+        self.child.on_event2(ctx, event, env);
+        self.scrollbar_horizontal.on_event2(ctx, event, env);
+        self.scrollbar_vertical.on_event2(ctx, event, env);
     }
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}

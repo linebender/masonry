@@ -7,6 +7,7 @@
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
 
+use crate::event2::WidgetEvent;
 use crate::kurbo::common::FloatExt;
 use crate::kurbo::Vec2;
 use crate::widget::{WidgetMut, WidgetRef};
@@ -483,6 +484,12 @@ impl Widget for Flex {
     fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env) {
         for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
             child.on_event(ctx, event, env);
+        }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
+            child.on_event2(ctx, event, env);
         }
     }
 

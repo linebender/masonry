@@ -1,3 +1,4 @@
+#![cfg(FALSE)]
 // This software is licensed under Apache License 2.0 and distributed on an
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
@@ -104,6 +105,8 @@ impl<'a, 'b> ImageMut<'a, 'b> {
 
 impl Widget for Image {
     fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event, _env: &Env) {}
+
+    fn on_event2(&mut self, _ctx: &mut EventCtx, _event: &WiidgetEvent, _env: &Env) {}
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}
 

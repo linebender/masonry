@@ -9,6 +9,7 @@ use std::f64::INFINITY;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, warn, Span};
 
+use crate::event2::WidgetEvent;
 use crate::kurbo::RoundedRectRadii;
 use crate::piet::{Color, FixedGradient, LinearGradient, PaintBrush, RadialGradient};
 use crate::widget::{WidgetId, WidgetMut, WidgetPod, WidgetRef};
@@ -301,6 +302,12 @@ impl Widget for SizedBox {
     fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env) {
         if let Some(ref mut child) = self.child {
             child.on_event(ctx, event, env);
+        }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        if let Some(ref mut child) = self.child {
+            child.on_event2(ctx, event, env);
         }
     }
 

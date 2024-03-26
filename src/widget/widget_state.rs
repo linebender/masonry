@@ -6,7 +6,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use druid_shell::{Cursor, Region};
+use winit::window::CursorIcon;
 
 use crate::bloom::Bloom;
 use crate::kurbo::{Insets, Point, Rect, Size};
@@ -66,10 +66,6 @@ pub struct WidgetState {
     pub(crate) is_portal: bool,
 
     // --- PASSES ---
-
-    // TODO: consider using bitflags for the booleans.
-    // The region that needs to be repainted, relative to the widget's bounds.
-    pub(crate) invalid: Region,
     /// A flag used to track and debug missing calls to place_child.
     pub(crate) is_expecting_place_child_call: bool,
 
@@ -103,7 +99,7 @@ pub struct WidgetState {
     pub(crate) cursor_change: CursorChange,
     /// The result of merging up children cursors. This gets cleared when merging state up (unlike
     /// cursor_change, which is persistent).
-    pub(crate) cursor: Option<Cursor>,
+    pub(crate) cursor: Option<CursorIcon>,
 
     pub(crate) text_registrations: Vec<TextFieldRegistration>,
 
@@ -154,7 +150,6 @@ impl WidgetState {
             is_expecting_place_child_call: false,
             paint_insets: Insets::ZERO,
             local_paint_rect: Rect::ZERO,
-            invalid: Region::EMPTY,
             is_portal: false,
             is_new: true,
             children_disabled_changed: false,
@@ -266,7 +261,7 @@ impl WidgetState {
     /// Because of how cursor merge logic works, we need to handle the leaf case;
     /// in that case there will be nothing in the `cursor` field (as merge_up
     /// is never called) and so we need to also check the `cursor_change` field.
-    fn take_cursor(&mut self) -> Option<Cursor> {
+    fn take_cursor(&mut self) -> Option<CursorIcon> {
         self.cursor.take().or_else(|| self.cursor_change.cursor())
     }
 

@@ -5,11 +5,13 @@
 use std::any::Any;
 use std::num::NonZeroU64;
 use std::ops::{Deref, DerefMut};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
 
 use crate::event::StatusChange;
+use crate::event2::WidgetEvent;
 use crate::widget::WidgetRef;
 use crate::{
     AsAny, BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
@@ -70,6 +72,8 @@ pub trait Widget: AsAny {
     /// requesting things from the [`EventCtx`], mutating the data, or submitting
     /// a [`Command`](crate::Command).
     fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env);
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env);
 
     #[allow(missing_docs)]
     fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, event: &StatusChange, env: &Env);
@@ -322,9 +326,9 @@ impl WidgetId {
     /// You must ensure that a given `WidgetId` is only ever used for one
     /// widget at a time.
     pub fn next() -> WidgetId {
-        use druid_shell::Counter;
-        static WIDGET_ID_COUNTER: Counter = Counter::new();
-        WidgetId(WIDGET_ID_COUNTER.next_nonzero())
+        static WIDGET_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+        let id = WIDGET_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        WidgetId(id.try_into().unwrap())
     }
 
     /// Create a reserved `WidgetId`, suitable for reuse.
@@ -351,6 +355,10 @@ impl WidgetId {
 impl Widget for Box<dyn Widget> {
     fn on_event(&mut self, ctx: &mut EventCtx, event: &Event, env: &Env) {
         self.deref_mut().on_event(ctx, event, env)
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        self.deref_mut().on_event2(ctx, event, env)
     }
 
     fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, event: &StatusChange, env: &Env) {

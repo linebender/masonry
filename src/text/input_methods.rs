@@ -13,6 +13,13 @@ use druid_shell::text::InputHandler;
 
 use crate::WidgetId;
 
+/// A change that has occured to text state, and needs to be
+/// communicated to the platform.
+pub(crate) struct ImeInvalidation {
+    pub widget: WidgetId,
+    pub event: druid_shell::text::Event,
+}
+
 /// A trait for input handlers registered by widgets.
 ///
 /// A widget registers itself as accepting text input by calling

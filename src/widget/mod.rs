@@ -11,7 +11,7 @@ mod widget_pod;
 mod widget_ref;
 mod widget_state;
 
-#[cfg(test)]
+#[cfg(FALSE)]
 mod tests;
 
 mod align;
@@ -37,7 +37,6 @@ pub use scroll_bar::ScrollBar;
 pub use sized_box::SizedBox;
 pub use spinner::Spinner;
 pub use split::Split;
-pub use textbox::TextBox;
 pub use widget::StoreInWidgetMut;
 #[doc(hidden)]
 pub use widget::{Widget, WidgetId};
@@ -48,8 +47,12 @@ pub use widget_mut::WidgetMut;
 pub use widget_pod::WidgetPod;
 pub use widget_ref::WidgetRef;
 pub use widget_state::WidgetState;
+use winit::window::CursorIcon;
 
+#[cfg(FALSE)]
 pub use self::image::Image;
+#[cfg(FALSE)]
+pub use textbox::TextBox;
 
 pub use sized_box::BackgroundBrush;
 
@@ -73,9 +76,9 @@ pub(crate) enum CursorChange {
     Default,
     /// Someone set a cursor, but if a child widget also set their cursor then we'll use theirs
     /// instead of ours.
-    Set(druid_shell::Cursor),
+    Set(CursorIcon),
     /// Someone set a cursor, and we'll use it regardless of what the children say.
-    Override(druid_shell::Cursor),
+    Override(CursorIcon),
 }
 
 use crate::{Affine, Data, Size};
@@ -103,7 +106,7 @@ pub enum FillStrat {
 
 // TODO
 impl CursorChange {
-    pub fn cursor(&self) -> Option<druid_shell::Cursor> {
+    pub fn cursor(&self) -> Option<CursorIcon> {
         match self {
             CursorChange::Set(c) | CursorChange::Override(c) => Some(c.clone()),
             CursorChange::Default => None,

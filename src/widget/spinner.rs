@@ -80,6 +80,11 @@ impl Widget for Spinner {
         }
     }
 
+    #[allow(unused)]
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &crate::event2::WidgetEvent, env: &Env) {
+        // TODO - Move anim frame to lifecycle
+    }
+
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, _env: &Env) {

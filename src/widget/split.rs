@@ -4,9 +4,9 @@
 
 //! A widget which splits an area in two, with a settable ratio, and optional draggable resizing.
 
-use druid_shell::Cursor;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, warn, Span};
+use winit::window::CursorIcon;
 
 use crate::kurbo::Line;
 use crate::widget::flex::Axis;
@@ -388,8 +388,8 @@ impl Widget for Split {
                         if !self.is_bar_hover {
                             self.is_bar_hover = true;
                             match self.split_axis {
-                                Axis::Horizontal => ctx.set_cursor(&Cursor::ResizeLeftRight),
-                                Axis::Vertical => ctx.set_cursor(&Cursor::ResizeUpDown),
+                                Axis::Horizontal => ctx.set_cursor(&CursorIcon::ColResize),
+                                Axis::Vertical => ctx.set_cursor(&CursorIcon::RowResize),
                             };
                         }
                     }
@@ -427,8 +427,8 @@ impl Widget for Split {
                             self.is_bar_hover = hover;
                             if hover {
                                 match self.split_axis {
-                                    Axis::Horizontal => ctx.set_cursor(&Cursor::ResizeLeftRight),
-                                    Axis::Vertical => ctx.set_cursor(&Cursor::ResizeUpDown),
+                                    Axis::Horizontal => ctx.set_cursor(&CursorIcon::ColResize),
+                                    Axis::Vertical => ctx.set_cursor(&CursorIcon::RowResize),
                                 };
                             } else {
                                 ctx.clear_cursor();
@@ -445,6 +445,10 @@ impl Widget for Split {
         if !self.child2.is_active() {
             self.child2.on_event(ctx, event, env);
         }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &crate::event2::WidgetEvent, env: &Env) {
+        todo!()
     }
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange, _env: &Env) {}

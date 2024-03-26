@@ -10,11 +10,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use druid_shell::{Cursor, Scale};
-use piet::ImageBuf;
-
 use crate::kurbo::{self, ParamCurve};
-use crate::piet;
 
 /// A trait used to represent cheap-to-compare value types.
 ///
@@ -103,7 +99,6 @@ impl_data_simple!(std::net::SocketAddrV6);
 impl_data_simple!(std::net::IpAddr);
 impl_data_simple!(std::net::SocketAddr);
 impl_data_simple!(std::ops::RangeFull);
-impl_data_simple!(crate::piet::InterpolationMode);
 #[cfg(feature = "chrono")]
 impl_data_simple!(chrono::Duration);
 #[cfg(feature = "chrono")]
@@ -303,18 +298,6 @@ impl<T: Data> Data for std::ops::Bound<T> {
 
 // masonry & deps impls
 
-impl Data for Scale {
-    fn same(&self, other: &Self) -> bool {
-        self == other
-    }
-}
-
-impl Data for Cursor {
-    fn same(&self, other: &Cursor) -> bool {
-        self == other
-    }
-}
-
 impl Data for kurbo::Point {
     fn same(&self, other: &Self) -> bool {
         self.x.same(&other.x) && self.y.same(&other.y)
@@ -482,12 +465,6 @@ impl Data for piet::FontStyle {
 impl Data for piet::TextAlignment {
     fn same(&self, other: &Self) -> bool {
         self == other
-    }
-}
-
-impl Data for ImageBuf {
-    fn same(&self, other: &Self) -> bool {
-        self.raw_pixels_shared().same(&other.raw_pixels_shared())
     }
 }
 

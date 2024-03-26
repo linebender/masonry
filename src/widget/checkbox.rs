@@ -6,8 +6,10 @@
 
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use winit::event::MouseButton;
 
 use crate::action::Action;
+use crate::event2::{PointerEvent, WidgetEvent};
 use crate::kurbo::{BezPath, Size};
 use crate::piet::{LineCap, LineJoin, LinearGradient, RenderContext, StrokeStyle, UnitPoint};
 use crate::widget::{Label, WidgetMut, WidgetRef};
@@ -79,6 +81,33 @@ impl Widget for Checkbox {
                 }
                 ctx.set_active(false);
             }
+            _ => (),
+        }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        match event {
+            WidgetEvent::PointerEvent(event) => match event {
+                PointerEvent::PointerDown(button, state) if button == MouseButton::Left => {
+                    if !ctx.is_disabled() {
+                        ctx.set_active(true);
+                        ctx.request_paint();
+                        trace!("Checkbox {:?} pressed", ctx.widget_id());
+                    }
+                }
+                PointerEvent::PointerUp(button, state) if button == MouseButton::Left => {
+                    if ctx.is_active() && !ctx.is_disabled() {
+                        if ctx.is_hot() {
+                            self.checked = !self.checked;
+                            ctx.submit_action(Action::CheckboxChecked(self.checked));
+                            trace!("Checkbox {:?} released", ctx.widget_id());
+                        }
+                        ctx.request_paint();
+                    }
+                    ctx.set_active(false);
+                }
+                _ => (),
+            },
             _ => (),
         }
     }

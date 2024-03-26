@@ -8,10 +8,12 @@
 // - set text
 // - set text attributes
 
-use druid_shell::Cursor;
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use winit::event::MouseButton;
+use winit::window::CursorIcon;
 
+use crate::event2::{PointerEvent, WidgetEvent};
 use crate::kurbo::Vec2;
 use crate::text::{FontDescriptor, TextAlignment, TextLayout};
 use crate::widget::WidgetRef;
@@ -224,11 +226,41 @@ impl Widget for Label {
                 let pos = event.pos - Vec2::new(LABEL_X_PADDING, 0.0);
 
                 if self.text_layout.link_for_pos(pos).is_some() {
-                    ctx.set_cursor(&Cursor::Pointer);
+                    ctx.set_cursor(&CursorIcon::Pointer);
                 } else {
                     ctx.clear_cursor();
                 }
             }
+            _ => {}
+        }
+    }
+
+    fn on_event2(&mut self, ctx: &mut EventCtx, event: &WidgetEvent, env: &Env) {
+        match event {
+            WidgetEvent::PointerEvent(event) => match event {
+                PointerEvent::PointerUp(button, state) if button == MouseButton::Left => {
+                    // TODO - Fix click handling
+                    // Account for the padding
+                    let pos = event.pos - Vec2::new(LABEL_X_PADDING, 0.0);
+                    if let Some(_link) = self.text_layout.link_for_pos(pos) {
+                        todo!();
+                        //ctx.submit_command(link.command.clone());
+                        // "link clicked"
+                        // See issue #21
+                    }
+                }
+                PointerEvent::PointerMove(state) => {
+                    // Account for the padding
+                    let pos = event.pos - Vec2::new(LABEL_X_PADDING, 0.0);
+
+                    if self.text_layout.link_for_pos(pos).is_some() {
+                        ctx.set_cursor(&CursorIcon::Pointer);
+                    } else {
+                        ctx.clear_cursor();
+                    }
+                }
+                _ => {}
+            },
             _ => {}
         }
     }

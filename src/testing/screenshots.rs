@@ -4,14 +4,10 @@
 
 //! Helper functions for writing snapshot tests and comparing images.
 
-pub use druid_shell::{
-    RawMods, Region, Scalable, Scale, Screen, SysMods, TimerToken, WindowHandle, WindowLevel,
-    WindowState,
-};
 use image::{GenericImageView as _, RgbaImage};
 
-use crate::piet::{BitmapTarget, ImageFormat};
 use crate::Size;
+use piet::{BitmapTarget, ImageFormat};
 
 pub(crate) fn get_rgba_image(render_target: &mut BitmapTarget, window_size: Size) -> RgbaImage {
     let pixels = render_target

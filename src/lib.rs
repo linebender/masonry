@@ -2,6 +2,8 @@
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
 
+// TODO - Convert issue numbers to github links
+
 //! A framework that aims to provide the foundation for Rust GUI libraries.
 //!
 //! Masonry gives you a platform to create windows (using Glazier as a backend) each with a tree of widgets. It also gives you tools to inspect that widget tree at runtime, write unit tests on it, and generally have an easier time debugging and maintaining your app.
@@ -121,6 +123,7 @@ pub mod widget;
 // TODO
 pub mod debug_logger;
 pub mod debug_values;
+pub mod render_root;
 
 pub use action::Action;
 pub use app_delegate::{AppDelegate, DelegateCtx};
@@ -143,8 +146,10 @@ pub use widget::{BackgroundBrush, Widget, WidgetId, WidgetPod, WidgetState};
 pub use winit::Error as PlatformError;
 
 // TODO
-//pub use piet::{Color, ImageBuf, LinearGradient, RadialGradient, RenderContext, };
+pub use piet::{ImageBuf, LinearGradient, RadialGradient, RenderContext};
 // TODO UnitPoint
+pub use piet;
+pub use piet::UnitPoint;
 pub use vello::peniko::Color;
 
 pub mod app_launcher2;
