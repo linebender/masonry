@@ -37,7 +37,7 @@ pub use scroll_bar::ScrollBar;
 pub use sized_box::SizedBox;
 pub use spinner::Spinner;
 pub use split::Split;
-pub use textbox::TextBox;
+//pub use textbox::TextBox;
 pub use widget::StoreInWidgetMut;
 #[doc(hidden)]
 pub use widget::{Widget, WidgetId};
@@ -49,6 +49,7 @@ pub use widget_pod::WidgetPod;
 pub use widget_ref::WidgetRef;
 pub use widget_state::WidgetState;
 
+#[cfg(FALSE)]
 pub use self::image::Image;
 
 pub use sized_box::BackgroundBrush;

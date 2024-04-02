@@ -7,15 +7,17 @@
 
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use vello::Scene;
 
 use crate::kurbo::Rect;
-use crate::piet::{Image as _, ImageBuf, InterpolationMode, PietImage};
+//use crate::piet::{Image as _, ImageBuf, InterpolationMode, PietImage};
 use crate::widget::{FillStrat, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext,
-    Size, StatusChange, Widget,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size,
+    StatusChange, Widget,
 };
 
+#[cfg(FALSE)]
 /// A widget that renders a bitmap Image.
 pub struct Image {
     image_data: ImageBuf,
@@ -25,8 +27,9 @@ pub struct Image {
     clip_area: Option<Rect>,
 }
 
-crate::declare_widget!(ImageMut, Image);
+//crate::declare_widget!(ImageMut, Image);
 
+#[cfg(FALSE)]
 impl Image {
     /// Create an image drawing widget from an image buffer.
     ///
@@ -69,6 +72,7 @@ impl Image {
     }
 }
 
+#[cfg(FALSE)]
 impl<'a, 'b> ImageMut<'a, 'b> {
     /// Modify the widget's fill strategy.
     #[inline]
@@ -102,6 +106,7 @@ impl<'a, 'b> ImageMut<'a, 'b> {
     }
 }
 
+#[cfg(FALSE)]
 impl Widget for Image {
     fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event) {}
 
@@ -128,7 +133,7 @@ impl Widget for Image {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let offset_matrix = self.fill.affine_to_fill(ctx.size(), self.image_data.size());
 
         // The ImageData's to_piet function does not clip to the image's size
@@ -181,6 +186,7 @@ impl Widget for Image {
     }
 }
 
+#[cfg(FALSE)]
 #[allow(unused)]
 // FIXME - remove cfg?
 #[cfg(not(target_arch = "wasm32"))]

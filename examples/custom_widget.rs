@@ -14,8 +14,7 @@ use masonry::text::{FontDescriptor, TextLayout};
 use masonry::widget::WidgetRef;
 use masonry::{
     Affine, AppLauncher, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, Rect, RenderContext, Size, StatusChange, Widget,
-    WindowDescription,
+    LifeCycleCtx, PaintCtx, Point, Rect, Size, StatusChange, Widget, WindowDescription,
 };
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
@@ -55,7 +54,7 @@ impl Widget for CustomWidget {
     // The paint method gets called last, after an event flow.
     // It goes event -> update -> layout -> paint, and each method can influence the next.
     // Basically, anything that changes the appearance of a widget causes a paint.
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         // Clear the whole widget with the color of your choice
         // (ctx.size() returns the size of the layout rect we're painting in)
         // Note: ctx also has a `clear` method, but that clears the whole context,

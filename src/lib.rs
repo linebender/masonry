@@ -88,6 +88,8 @@
 #![allow(clippy::bool_assert_comparison)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(debug_assertions), allow(unused))]
+#![allow(unused)]
+#![allow(missing_docs)]
 
 // TODO - Add logo
 

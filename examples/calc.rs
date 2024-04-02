@@ -16,6 +16,7 @@ use masonry::{
 };
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, Span};
+use vello::Scene;
 
 #[derive(Clone)]
 struct CalcState {
@@ -188,8 +189,8 @@ impl Widget for CalcButton {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.inner.paint(ctx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.inner.paint(ctx, scene);
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

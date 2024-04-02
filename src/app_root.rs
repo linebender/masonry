@@ -1238,9 +1238,13 @@ impl WindowRoot {
 
         if let WindowSizePolicy::Content = self.size_policy {
             let insets = self.handle.content_insets();
+            // FIXME - This code is extremely tangled because we're currently using
+            // two versions of Kurbo. This should be fixed as soon as they're unified again.
+            let content_size =
+                druid_shell::kurbo::Size::new(content_size.width, content_size.height);
             let full_size = (content_size.to_rect() + insets).size();
-            if self.size != full_size {
-                self.size = full_size;
+            if (self.size.width, self.size.height) != (full_size.width, full_size.height) {
+                self.size = (full_size.width, full_size.height).into();
                 self.handle.set_size(full_size)
             }
         }

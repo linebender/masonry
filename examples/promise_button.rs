@@ -11,13 +11,15 @@ use std::{thread, time};
 use druid_shell::Cursor;
 use masonry::kurbo::Vec2;
 use masonry::promise::PromiseToken;
-use masonry::text::TextLayout;
 use masonry::widget::prelude::*;
 use masonry::widget::WidgetRef;
 use masonry::{AppLauncher, WindowDescription};
 use masonry::{ArcStr, Color, Point};
+use parley::Layout;
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use vello::peniko::Brush;
+use vello::Scene;
 
 // added padding between the edges of the widget and the text.
 const LABEL_X_PADDING: f64 = 2.0;
@@ -25,6 +27,7 @@ const LABEL_X_PADDING: f64 = 2.0;
 pub struct PromiseButton {
     value: u32,
     text_layout: TextLayout<ArcStr>,
+    text_layout2: Option<Layout<Brush>>,
     line_break_mode: LineBreaking,
     promise_token: PromiseToken<u32>,
 
@@ -53,6 +56,7 @@ impl PromiseButton {
         Self {
             value: 0,
             text_layout,
+            text_layout2: None,
             line_break_mode: LineBreaking::Overflow,
             promise_token: PromiseToken::empty(),
             default_text_color: masonry::theme::TEXT_COLOR,
@@ -133,7 +137,7 @@ impl Widget for PromiseButton {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let origin = Point::new(LABEL_X_PADDING, 0.0);
         let label_size = ctx.size();
 

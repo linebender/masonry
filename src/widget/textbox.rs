@@ -1,3 +1,6 @@
+// NOPE DON'T COMMIT
+
+/*
 // This software is licensed under Apache License 2.0 and distributed on an
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
@@ -9,10 +12,10 @@ use std::time::Duration;
 
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace_span, Span};
+use vello::Scene;
 
 use crate::action::Action;
 use crate::kurbo::{Affine, Insets};
-use crate::piet::{RenderContext as _, TextLayout as _};
 use crate::shell::{HotKey, KeyEvent, SysMods, TimerToken};
 use crate::text::{ImeInvalidation, Selection, TextAlignment, TextComponent, TextLayout};
 use crate::widget::{Portal, WidgetMut, WidgetRef};
@@ -20,6 +23,7 @@ use crate::{
     theme, ArcStr, BoxConstraints, Command, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx,
     PaintCtx, Point, Rect, Size, StatusChange, Vec2, Widget, WidgetPod,
 };
+use druid_shell::piet::TextLayout as _;
 
 const CURSOR_BLINK_DURATION: Duration = Duration::from_millis(500);
 const MAC_OR_LINUX: bool = cfg!(any(target_os = "macos", target_os = "linux"));
@@ -605,7 +609,7 @@ impl Widget for TextBox {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         if !self.inner.as_ref().child().can_read() {
             tracing::warn!("Widget::paint called with outstanding IME lock, skipping");
             return;
@@ -636,7 +640,7 @@ impl Widget for TextBox {
             let padding_offset = Vec2::new(textbox_insets.x0, textbox_insets.y0);
             ctx.with_save(|ctx| {
                 ctx.transform(Affine::translate(padding_offset));
-                self.inner.paint(ctx);
+                self.inner.paint(ctx, scene);
             })
         } else {
             ctx.skip_child(&mut self.inner);
@@ -800,3 +804,4 @@ mod tests {
         assert!(image_1 == image_2);
     }
 }
+*/
