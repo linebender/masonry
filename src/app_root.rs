@@ -21,8 +21,12 @@ use druid_shell::{
     Cursor, FileDialogToken, FileInfo, Region, TextFieldToken, TimerToken, WindowBuilder,
 };
 // Automatically defaults to std::time::Instant on non Wasm platforms
+use druid_shell::piet::Piet;
 use instant::Instant;
+use kurbo::Affine;
 use tracing::{error, info, info_span};
+use vello::peniko::{Color, Fill};
+use vello::Scene;
 
 use crate::action::ActionQueue;
 use crate::app_delegate::{AppDelegate, DelegateCtx, NullDelegate};
@@ -31,12 +35,11 @@ use crate::contexts::GlobalPassCtx;
 use crate::debug_logger::DebugLogger;
 use crate::ext_event::{ExtEventQueue, ExtEventSink, ExtMessage};
 use crate::kurbo::{Point, Size};
-use crate::piet::{Color, Piet, RenderContext};
 use crate::platform::{
     DialogInfo, WindowConfig, WindowSizePolicy, EXT_EVENT_IDLE_TOKEN, RUN_COMMANDS_TOKEN,
 };
 use crate::testing::MockTimerQueue;
-use crate::text::TextFieldRegistration;
+use crate::text_helpers::TextFieldRegistration;
 use crate::widget::{FocusChange, StoreInWidgetMut, WidgetMut, WidgetRef, WidgetState};
 use crate::{
     command as sys_cmd, ArcStr, BoxConstraints, Command, Event, EventCtx, Handled, InternalEvent,
@@ -100,7 +103,6 @@ pub struct WindowRoot {
     pub(crate) title: ArcStr,
     size_policy: WindowSizePolicy,
     size: Size,
-    invalid: Region,
     // Is `Some` if the most recently displayed frame was an animation frame.
     pub(crate) last_anim: Option<Instant>,
     pub(crate) last_mouse_pos: Option<Point>,
@@ -316,18 +318,19 @@ impl AppRoot {
     ///
     /// Currently, this computes layout if needed and calls paint methods in the
     /// widget hierarchy.
-    pub fn paint(&mut self, window_id: WindowId, piet: &mut Piet, invalid: &Region) {
+    pub fn paint(&mut self, window_id: WindowId, piet: &mut Piet) {
         let mut inner = self.inner.borrow_mut();
         let inner = inner.deref_mut();
         if let Some(win) = inner.active_windows.get_mut(&window_id) {
+            let mut scene = Scene::new();
             win.do_paint(
-                piet,
-                invalid,
+                &mut scene,
                 &mut inner.debug_logger,
                 &mut inner.command_queue,
                 &mut inner.action_queue,
             );
         }
+        todo!("Switch to winit");
     }
 
     /// Run any leftover commands from previous events.
@@ -857,7 +860,6 @@ impl WindowRoot {
             root: WidgetPod::new(root),
             size_policy,
             size: Size::ZERO,
-            invalid: Region::EMPTY,
             title,
             transparent,
             last_anim: None,
@@ -910,6 +912,9 @@ impl WindowRoot {
                 ..
             } = self;
             ime_handlers.retain(|(token, v)| {
+                // FIXME
+                let will_retain = true;
+                #[cfg(FALSE)]
                 let will_retain = v.is_alive();
                 if !will_retain {
                     tracing::debug!("{:?} removed", token);
@@ -956,7 +961,6 @@ impl WindowRoot {
         if self.wants_animation_frame() {
             self.handle.request_anim_frame();
         }
-        self.invalid.union_with(&widget_state.invalid);
         for ime_field in widget_state.text_registrations.drain(..) {
             let token = self.handle.add_text_field();
             tracing::debug!("{:?} added", token);
@@ -1138,25 +1142,7 @@ impl WindowRoot {
     }
 
     pub(crate) fn invalidate_paint_region(&mut self) {
-        if self.root.state().needs_layout {
-            // TODO - this might be too coarse
-            self.handle.invalidate();
-        } else {
-            for rect in self.invalid.rects() {
-                self.handle.invalidate_rect(*rect);
-            }
-        }
-        self.invalid.clear();
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn invalid(&self) -> &Region {
-        &self.invalid
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn invalid_mut(&mut self) -> &mut Region {
-        &mut self.invalid
+        self.handle.invalidate();
     }
 
     /// Get ready for painting, by doing layout and sending an `AnimFrame` event.
@@ -1187,8 +1173,7 @@ impl WindowRoot {
 
     pub(crate) fn do_paint(
         &mut self,
-        piet: &mut Piet,
-        invalid: &Region,
+        scene: &mut Scene,
         debug_logger: &mut DebugLogger,
         command_queue: &mut CommandQueue,
         action_queue: &mut ActionQueue,
@@ -1197,17 +1182,20 @@ impl WindowRoot {
             self.layout(debug_logger, command_queue, action_queue);
         }
 
-        for &r in invalid.rects() {
-            piet.clear(
-                Some(r),
-                if self.transparent {
-                    Color::TRANSPARENT
-                } else {
-                    crate::theme::WINDOW_BACKGROUND_COLOR
-                },
-            );
-        }
-        self.paint(piet, invalid, debug_logger, command_queue, action_queue);
+        scene.reset();
+        self.paint(scene, debug_logger, command_queue, action_queue);
+
+        // FIXME - This is a workaround to Vello panicking when given an
+        // empty scene
+        // See https://github.com/linebender/vello/issues/291
+        let empty_path = kurbo::Rect::ZERO;
+        scene.fill(
+            Fill::NonZero,
+            Affine::IDENTITY,
+            &Color::TRANSPARENT,
+            None,
+            &empty_path,
+        );
     }
 
     pub(crate) fn layout(
@@ -1275,8 +1263,7 @@ impl WindowRoot {
 
     fn paint(
         &mut self,
-        piet: &mut Piet,
-        invalid: &Region,
+        scene: &mut Scene,
         debug_logger: &mut DebugLogger,
         command_queue: &mut CommandQueue,
         action_queue: &mut ActionQueue,
@@ -1294,33 +1281,17 @@ impl WindowRoot {
             self.focus,
         );
         let mut ctx = PaintCtx {
-            render_ctx: piet,
             global_state: &mut global_state,
             widget_state: &widget_state,
-            z_ops: Vec::new(),
-            region: invalid.clone(),
             depth: 0,
             debug_paint: false,
             debug_widget: false,
-            debug_widget_id: false,
         };
 
         let root = &mut self.root;
         info_span!("paint").in_scope(|| {
-            ctx.with_child_ctx(invalid.clone(), |ctx| root.paint_raw(ctx));
+            root.paint(&mut ctx, scene);
         });
-
-        let mut z_ops = std::mem::take(&mut ctx.z_ops);
-        z_ops.sort_by_key(|k| k.z_index);
-
-        for z_op in z_ops.into_iter() {
-            ctx.with_child_ctx(invalid.clone(), |ctx| {
-                ctx.with_save(|ctx| {
-                    ctx.render_ctx.transform(z_op.transform);
-                    (z_op.paint_func)(ctx);
-                });
-            });
-        }
 
         if self.wants_animation_frame() {
             self.handle.request_anim_frame();
@@ -1332,6 +1303,8 @@ impl WindowRoot {
         req_token: TextFieldToken,
         mutable: bool,
     ) -> Box<dyn InputHandler> {
+        todo!();
+        #[cfg(FALSE)]
         self.ime_handlers
             .iter()
             .find(|(token, _)| req_token == *token)
@@ -1344,6 +1317,8 @@ impl WindowRoot {
         mutable: bool,
     ) -> Option<Box<dyn InputHandler>> {
         let focused_widget_id = self.focus?;
+        todo!();
+        #[cfg(FALSE)]
         self.ime_handlers
             .iter()
             .find(|(_, reg)| reg.widget_id == focused_widget_id)
@@ -1423,6 +1398,8 @@ impl WindowRoot {
             .ime_handlers
             .iter()
             .find(|(token, _)| req_token == *token)?;
+        todo!();
+        #[cfg(FALSE)]
         reg.document.release().then_some(reg.widget_id)
     }
 
@@ -1432,6 +1409,8 @@ impl WindowRoot {
             .ime_handlers
             .iter()
             .find(|(_, reg)| reg.widget_id == focused_widget_id)?;
+        todo!();
+        #[cfg(FALSE)]
         reg.document.release().then_some(reg.widget_id)
     }
 

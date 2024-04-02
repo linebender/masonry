@@ -16,6 +16,7 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 use smallvec::SmallVec;
+use vello::Scene;
 
 use crate::widget::{SizedBox, WidgetRef};
 use crate::*;
@@ -24,7 +25,7 @@ pub type EventFn<S> = dyn FnMut(&mut S, &mut EventCtx, &Event);
 pub type StatusChangeFn<S> = dyn FnMut(&mut S, &mut LifeCycleCtx, &StatusChange);
 pub type LifeCycleFn<S> = dyn FnMut(&mut S, &mut LifeCycleCtx, &LifeCycle);
 pub type LayoutFn<S> = dyn FnMut(&mut S, &mut LayoutCtx, &BoxConstraints) -> Size;
-pub type PaintFn<S> = dyn FnMut(&mut S, &mut PaintCtx);
+pub type PaintFn<S> = dyn FnMut(&mut S, &mut PaintCtx, &mut Scene);
 pub type ChildrenFn<S> = dyn Fn(&S) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]>;
 
 pub const REPLACE_CHILD: Selector = Selector::new("masonry-test.replace-child");
@@ -148,7 +149,7 @@ impl<S> ModularWidget<S> {
         self
     }
 
-    pub fn paint_fn(mut self, f: impl FnMut(&mut S, &mut PaintCtx) + 'static) -> Self {
+    pub fn paint_fn(mut self, f: impl FnMut(&mut S, &mut PaintCtx, &mut Scene) + 'static) -> Self {
         self.paint = Some(Box::new(f));
         self
     }
@@ -193,9 +194,9 @@ impl<S: 'static> Widget for ModularWidget<S> {
             .unwrap_or_else(|| Size::new(100., 100.))
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         if let Some(f) = self.paint.as_mut() {
-            f(&mut self.state, ctx)
+            f(&mut self.state, ctx, scene)
         }
     }
 
@@ -240,8 +241,8 @@ impl Widget for ReplaceChild {
         self.child.layout(ctx, bc)
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.child.paint_raw(ctx)
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.child.paint(ctx, scene)
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {
@@ -302,8 +303,8 @@ impl<W: Widget> Widget for Recorder<W> {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.child.paint(ctx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.child.paint(ctx, scene);
         self.recording.push(Record::Paint)
     }
 

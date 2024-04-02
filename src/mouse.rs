@@ -76,14 +76,16 @@ impl From<druid_shell::MouseEvent> for MouseEvent {
             wheel_delta,
         } = src;
         MouseEvent {
-            pos,
-            window_pos: pos,
+            // Temporary fix, should be removed after the switch to Winit
+            pos: (pos.x, pos.y).into(),
+            window_pos: (pos.x, pos.y).into(),
             buttons,
             mods,
             count,
             focus,
             button,
-            wheel_delta,
+            // Temporary fix, should be removed after the switch to Winit
+            wheel_delta: (wheel_delta.x, wheel_delta.y).into(),
         }
     }
 }

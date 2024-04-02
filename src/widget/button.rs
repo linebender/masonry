@@ -6,12 +6,16 @@
 
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use vello::Scene;
 
 use crate::action::Action;
+#[allow(unused)]
+use crate::paint_scene_helpers::UnitPoint;
+use crate::paint_scene_helpers::{fill_lin_gradient, stroke};
 use crate::widget::{Label, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
     theme, ArcStr, BoxConstraints, Event, EventCtx, Insets, LayoutCtx, LifeCycle, LifeCycleCtx,
-    LinearGradient, PaintCtx, RenderContext, Size, StatusChange, UnitPoint, Widget,
+    PaintCtx, Size, StatusChange, Widget,
 };
 
 // the minimum padding added to a button.
@@ -126,7 +130,7 @@ impl Widget for Button {
         button_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let is_active = ctx.is_active() && !ctx.is_disabled();
         let is_hot = ctx.is_hot();
         let size = ctx.size();
@@ -138,23 +142,11 @@ impl Widget for Button {
             .to_rounded_rect(theme::BUTTON_BORDER_RADIUS);
 
         let bg_gradient = if ctx.is_disabled() {
-            LinearGradient::new(
-                UnitPoint::TOP,
-                UnitPoint::BOTTOM,
-                (theme::DISABLED_BUTTON_LIGHT, theme::DISABLED_BUTTON_DARK),
-            )
+            [theme::DISABLED_BUTTON_LIGHT, theme::DISABLED_BUTTON_DARK]
         } else if is_active {
-            LinearGradient::new(
-                UnitPoint::TOP,
-                UnitPoint::BOTTOM,
-                (theme::BUTTON_DARK, theme::BUTTON_LIGHT),
-            )
+            [theme::BUTTON_DARK, theme::BUTTON_LIGHT]
         } else {
-            LinearGradient::new(
-                UnitPoint::TOP,
-                UnitPoint::BOTTOM,
-                (theme::BUTTON_LIGHT, theme::BUTTON_DARK),
-            )
+            [theme::BUTTON_LIGHT, theme::BUTTON_DARK]
         };
 
         let border_color = if is_hot && !ctx.is_disabled() {
@@ -163,10 +155,16 @@ impl Widget for Button {
             theme::BORDER_DARK
         };
 
-        ctx.stroke(rounded_rect, &border_color, stroke_width);
-        ctx.fill(rounded_rect, &bg_gradient);
+        stroke(scene, &rounded_rect, &border_color, stroke_width);
+        fill_lin_gradient(
+            scene,
+            &rounded_rect,
+            bg_gradient,
+            UnitPoint::TOP,
+            UnitPoint::BOTTOM,
+        );
 
-        self.label.paint(ctx);
+        self.label.paint(ctx, scene);
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

@@ -3,17 +3,18 @@
 // details.
 
 #![allow(missing_docs)]
-#![allow(unused)]
 
-use druid_shell::kurbo::Rect;
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
+use vello::Scene;
 
 use super::Axis;
+use crate::kurbo::Rect;
+use crate::paint_scene_helpers::{fill_color, stroke};
 use crate::widget::WidgetRef;
 use crate::{
     theme, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
-    RenderContext, Selector, Size, StatusChange, Widget,
+    Selector, Size, StatusChange, Widget,
 };
 
 // RULES
@@ -192,10 +193,7 @@ impl Widget for ScrollBar {
             .into()
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        let brush = ctx.render_ctx.solid_brush(theme::SCROLLBAR_COLOR);
-        let border_brush = ctx.render_ctx.solid_brush(theme::SCROLLBAR_BORDER_COLOR);
-
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let radius = theme::SCROLLBAR_RADIUS;
         let edge_width = theme::SCROLLBAR_EDGE_WIDTH;
         let cursor_padding = theme::SCROLLBAR_PAD;
@@ -206,9 +204,14 @@ impl Widget for ScrollBar {
             .get_cursor_rect(ctx.size(), cursor_min_length)
             .inset((-inset_x, -inset_y))
             .to_rounded_rect(radius);
-        ctx.render_ctx.fill(cursor_rect, &brush);
-        ctx.render_ctx
-            .stroke(cursor_rect, &border_brush, edge_width);
+
+        fill_color(scene, &cursor_rect, theme::SCROLLBAR_COLOR);
+        stroke(
+            scene,
+            &cursor_rect,
+            &theme::SCROLLBAR_BORDER_COLOR,
+            edge_width,
+        );
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

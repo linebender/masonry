@@ -7,13 +7,15 @@
 use druid_shell::Cursor;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, warn, Span};
+use vello::Scene;
 
 use crate::kurbo::Line;
+use crate::paint_scene_helpers::{fill_color, stroke};
 use crate::widget::flex::Axis;
 use crate::widget::{WidgetPod, WidgetRef};
 use crate::{
     theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Rect, RenderContext, Size, StatusChange, Widget,
+    Point, Rect, Size, StatusChange, Widget,
 };
 
 // TODO - Have child widget type as generic argument
@@ -234,7 +236,7 @@ impl Split {
         }
     }
 
-    fn paint_solid_bar(&mut self, ctx: &mut PaintCtx) {
+    fn paint_solid_bar(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let size = ctx.size();
         let (edge1, edge2) = self.bar_edges(size);
         let padding = self.bar_padding();
@@ -249,10 +251,10 @@ impl Split {
             ),
         };
         let splitter_color = self.bar_color();
-        ctx.fill(rect, &splitter_color);
+        fill_color(scene, &rect, splitter_color);
     }
 
-    fn paint_stroked_bar(&mut self, ctx: &mut PaintCtx) {
+    fn paint_stroked_bar(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let size = ctx.size();
         // Set the line width to a third of the splitter bar size,
         // because we'll paint two equal lines at the edges.
@@ -283,8 +285,8 @@ impl Split {
             ),
         };
         let splitter_color = self.bar_color();
-        ctx.stroke(line1, &splitter_color, line_width);
-        ctx.stroke(line2, &splitter_color, line_width);
+        stroke(scene, &line1, &splitter_color, line_width);
+        stroke(scene, &line2, &splitter_color, line_width);
     }
 }
 
@@ -551,15 +553,15 @@ impl Widget for Split {
         my_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         // TODO - Paint differently if the bar is draggable and hovered.
         if self.solid {
-            self.paint_solid_bar(ctx);
+            self.paint_solid_bar(ctx, scene);
         } else {
-            self.paint_stroked_bar(ctx);
+            self.paint_stroked_bar(ctx, scene);
         }
-        self.child1.paint(ctx);
-        self.child2.paint(ctx);
+        self.child1.paint(ctx, scene);
+        self.child2.paint(ctx, scene);
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

@@ -16,6 +16,7 @@ use masonry::widget::WidgetRef;
 use masonry::widget::{Flex, Label, Spinner, WidgetPod};
 use masonry::{AppLauncher, Point, Selector, Target, WindowDescription};
 use smallvec::{smallvec, SmallVec};
+use vello::Scene;
 
 const FINISH_SLOW_FUNCTION: Selector<u32> = Selector::new("finish_slow_function");
 
@@ -102,8 +103,8 @@ impl Widget for MainWidget {
         content_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.content.paint(ctx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.content.paint(ctx, scene);
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

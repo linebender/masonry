@@ -153,7 +153,7 @@ impl FillStrat {
 pub mod prelude {
     #[doc(hidden)]
     pub use crate::{
-        BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-        RenderContext, Size, StatusChange, Widget, WidgetId,
+        BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size,
+        StatusChange, Widget, WidgetId,
     };
 }

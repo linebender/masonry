@@ -3,17 +3,25 @@
 // details.
 
 //! Tools and infrastructure for testing widgets.
+#![warn(unused)]
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
+use std::num::NonZeroUsize;
 
+pub use druid_shell::RawMods;
 use druid_shell::{KeyEvent, Modifiers, MouseButton, MouseButtons};
-pub use druid_shell::{RawMods, Region};
 use image::io::Reader as ImageReader;
+use image::RgbaImage;
 use instant::Duration;
 use shell::text::Selection;
+use vello::util::RenderContext;
+use vello::{block_on_wgpu, RendererOptions, Scene};
+use wgpu::{
+    BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, ImageCopyBuffer,
+    TextureDescriptor, TextureFormat, TextureUsages,
+};
 
-use super::screenshots::{get_image_diff, get_rgba_image};
+use super::screenshots::get_image_diff;
 use super::snapshot_utils::get_cargo_workspace;
 use super::MockTimerQueue;
 use crate::action::{Action, ActionQueue};
@@ -22,12 +30,15 @@ use crate::command::CommandQueue;
 use crate::contexts::GlobalPassCtx;
 use crate::debug_logger::DebugLogger;
 use crate::ext_event::ExtEventQueue;
-use crate::piet::{BitmapTarget, Device, ImageFormat, Piet};
 use crate::widget::{StoreInWidgetMut, WidgetMut, WidgetRef};
 use crate::*;
 
-/// Default screen size for tests.
+// TODO - Get shorter names
+/// Default canvas size for tests.
 pub const HARNESS_DEFAULT_SIZE: Size = Size::new(400., 400.);
+
+/// Default background color for tests.
+pub const HARNESS_DEFAULT_BACKGROUND_COLOR: Color = Color::rgb8(0x29, 0x29, 0x29);
 
 /// A safe headless environment to test widgets in.
 ///
@@ -113,11 +124,11 @@ pub const HARNESS_DEFAULT_SIZE: Size = Size::new(400., 400.);
 ///
 /// # simple_button();
 /// ```
-// TODO - Fix examples
 pub struct TestHarness {
     mock_app: MockAppRoot,
     mouse_state: MouseEvent,
     window_size: Size,
+    background_color: Color,
 }
 
 /// Assert a snapshot of a rendered frame of your app.
@@ -156,12 +167,19 @@ impl TestHarness {
     /// Builds harness with given root widget.
     ///
     /// Window size will be [`HARNESS_DEFAULT_SIZE`].
+    /// Background color will be [`HARNESS_DEFAULT_BACKGROUND_COLOR`].
     pub fn create(root: impl Widget) -> Self {
-        Self::create_with_size(root, HARNESS_DEFAULT_SIZE)
+        Self::create_with(root, HARNESS_DEFAULT_SIZE, HARNESS_DEFAULT_BACKGROUND_COLOR)
     }
 
+    // TODO - Remove
     /// Builds harness with given root widget and window size.
     pub fn create_with_size(root: impl Widget, window_size: Size) -> Self {
+        Self::create_with(root, window_size, HARNESS_DEFAULT_BACKGROUND_COLOR)
+    }
+
+    /// Builds harness with given root widget, canvas size and background color.
+    pub fn create_with(root: impl Widget, window_size: Size, background_color: Color) -> Self {
         //let ext_host = ExtEventHost::default();
         //let ext_handle = ext_host.make_sink();
 
@@ -199,6 +217,7 @@ impl TestHarness {
             },
             mouse_state,
             window_size,
+            background_color,
         };
 
         // verify that all widgets are marked as having children_changed
@@ -236,50 +255,109 @@ impl TestHarness {
         // TODO - this might be too coarse
         if self.root_widget().state().needs_layout {
             self.mock_app.layout();
-            *self.window_mut().invalid_mut() = Region::from(self.window_size.to_rect());
         }
     }
 
-    fn render_to(&mut self, render_target: &mut BitmapTarget) {
-        /// A way to clean up resources when our render context goes out of
-        /// scope, even during a panic.
-        pub struct RenderContextGuard<'a>(Piet<'a>);
+    // TODO - We add way too many dependencies in this code
+    // TODO - Should be async?
+    /// Create a bitmap (an array of pixels), paint the window and return the bitmap as an 8-bits-per-channel RGB image.
+    pub fn render(&mut self) -> RgbaImage {
+        let mut context =
+            RenderContext::new().expect("Got non-Send/Sync error from creating render context");
+        let device_id =
+            pollster::block_on(context.device(None)).expect("No compatible device found");
+        let device_handle = &mut context.devices[device_id];
+        let device = &device_handle.device;
+        let queue = &device_handle.queue;
+        let mut renderer = vello::Renderer::new(
+            device,
+            RendererOptions {
+                surface_format: None,
+                // TODO - Examine this value
+                use_cpu: true,
+                num_init_threads: NonZeroUsize::new(1),
+                // TODO - Examine this value
+                antialiasing_support: vello::AaSupport::area_only(),
+            },
+        )
+        .expect("Got non-Send/Sync error from creating renderer");
 
-        impl Drop for RenderContextGuard<'_> {
-            fn drop(&mut self) {
-                // We need to call finish even if a test assert failed
-                if let Err(err) = self.0.finish() {
-                    // We can't panic, because we might already be panicking
-                    tracing::error!("piet finish failed: {}", err);
-                }
-            }
+        let mut scene = Scene::new();
+        self.mock_app.paint_region(&mut scene);
+
+        // TODO - fix window_size
+        let (width, height) = (
+            self.window_size.width as u32,
+            self.window_size.height as u32,
+        );
+        let render_params = vello::RenderParams {
+            // TODO - Parameterize
+            base_color: self.background_color,
+            width,
+            height,
+            antialiasing_method: vello::AaConfig::Area,
+        };
+
+        let size = Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let target = device.create_texture(&TextureDescriptor {
+            label: Some("Target texture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: TextureFormat::Rgba8Unorm,
+            usage: TextureUsages::STORAGE_BINDING | TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        let view = target.create_view(&wgpu::TextureViewDescriptor::default());
+        renderer
+            .render_to_texture(device, queue, &scene, &view, &render_params)
+            .expect("Got non-Send/Sync error from rendering");
+        let padded_byte_width = (width * 4).next_multiple_of(256);
+        let buffer_size = padded_byte_width as u64 * height as u64;
+        let buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("val"),
+            size: buffer_size,
+            usage: BufferUsages::MAP_READ | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("Copy out buffer"),
+        });
+        encoder.copy_texture_to_buffer(
+            target.as_image_copy(),
+            ImageCopyBuffer {
+                buffer: &buffer,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded_byte_width),
+                    rows_per_image: None,
+                },
+            },
+            size,
+        );
+
+        queue.submit([encoder.finish()]);
+        let buf_slice = buffer.slice(..);
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        buf_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        let recv_result = block_on_wgpu(device, receiver.receive()).expect("channel was closed");
+        recv_result.expect("failed to map buffer");
+
+        let data = buf_slice.get_mapped_range();
+        let mut result_unpadded =
+            Vec::<u8>::with_capacity((width * height * 4).try_into().unwrap());
+        for row in 0..height {
+            let start = (row * padded_byte_width).try_into().unwrap();
+            result_unpadded.extend(&data[start..start + (width * 4) as usize]);
         }
 
-        let mut piet = RenderContextGuard(render_target.render_context());
-
-        // FIXME - this doesn't make sense given we might render to a fresh surface
-        let invalid = std::mem::replace(self.window_mut().invalid_mut(), Region::EMPTY);
-        self.mock_app.paint_region(&mut piet.0, &invalid);
-    }
-
-    /// Create a Piet bitmap render context (an array of pixels), paint the
-    /// window and return the bitmap.
-    pub fn render(&mut self) -> Arc<[u8]> {
-        let mut device = Device::new().expect("harness failed to get device");
-        let mut render_target = device
-            .bitmap_target(
-                self.window_size.width as usize,
-                self.window_size.height as usize,
-                1.0,
-            )
-            .expect("failed to create bitmap_target");
-
-        self.render_to(&mut render_target);
-
-        render_target
-            .to_image_buf(ImageFormat::RgbaPremul)
-            .unwrap()
-            .raw_pixels_shared()
+        RgbaImage::from_vec(width, height, result_unpadded).expect("failed to create image")
     }
 
     // --- Event helpers ---
@@ -546,6 +624,8 @@ impl TestHarness {
         test_module_path: &str,
         test_name: &str,
     ) {
+        let new_image = self.render();
+
         if option_env!("SKIP_RENDER_SNAPSHOTS").is_some() {
             // FIXME - This is a terrible, awful hack.
             // We need a way to skip render snapshots on CI and locally
@@ -553,19 +633,6 @@ impl TestHarness {
             // different platforms.
             return;
         }
-
-        let mut device = Device::new().expect("harness failed to get device");
-        let mut render_target = device
-            .bitmap_target(
-                self.window_size.width as usize,
-                self.window_size.height as usize,
-                1.0,
-            )
-            .expect("failed to create bitmap_target");
-
-        self.render_to(&mut render_target);
-
-        let new_image = get_rgba_image(&mut render_target, self.window_size);
 
         let workspace_path = get_cargo_workspace(manifest_dir);
         let test_file_path_abs = workspace_path.join(test_file_path);
@@ -646,10 +713,9 @@ impl MockAppRoot {
         );
     }
 
-    fn paint_region(&mut self, piet: &mut Piet, invalid: &Region) {
+    fn paint_region(&mut self, scene: &mut Scene) {
         self.window.do_paint(
-            piet,
-            invalid,
+            scene,
             &mut self.debug_logger,
             &mut self.command_queue,
             &mut self.action_queue,

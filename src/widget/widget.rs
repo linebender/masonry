@@ -8,6 +8,7 @@ use std::ops::{Deref, DerefMut};
 
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
+use vello::Scene;
 
 use crate::event::StatusChange;
 use crate::widget::WidgetRef;
@@ -109,7 +110,7 @@ pub trait Widget: AsAny {
     /// children, or annotations (for example, scrollbars) by painting
     /// afterwards. In addition, they can apply masks and transforms on
     /// the render context, which is especially useful for scrolling.
-    fn paint(&mut self, ctx: &mut PaintCtx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene);
 
     /// Return references to this widget's children.
     ///
@@ -364,8 +365,8 @@ impl Widget for Box<dyn Widget> {
         self.deref_mut().layout(ctx, bc)
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.deref_mut().paint(ctx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.deref_mut().paint(ctx, scene);
     }
 
     fn type_name(&self) -> &'static str {

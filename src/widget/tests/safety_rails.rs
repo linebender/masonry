@@ -20,8 +20,8 @@ fn make_parent_widget<W: Widget>(child: W) -> ModularWidget<WidgetPod<W>> {
             ctx.place_child(child, Point::ZERO);
             size
         })
-        .paint_fn(move |child, ctx| {
-            child.paint(ctx);
+        .paint_fn(move |child, ctx, scene| {
+            child.paint(ctx, scene);
         })
         .children_fn(|child| smallvec![child.as_dyn()])
 }
@@ -89,7 +89,7 @@ fn check_forget_to_call_place_child() {
 #[should_panic(expected = "not visited in method paint")]
 #[test]
 fn check_forget_to_recurse_paint() {
-    let widget = make_parent_widget(Flex::row()).paint_fn(|_child, _ctx| {
+    let widget = make_parent_widget(Flex::row()).paint_fn(|_child, _ctx, _scene| {
         // We forget to call child.paint();
     });
 
@@ -172,7 +172,7 @@ fn allow_non_recurse_stashed_paint() {
             ctx.set_stashed(child, true);
         })
         .layout_fn(|_child, _ctx, _bc| Size::ZERO)
-        .paint_fn(|_child, _ctx| {
+        .paint_fn(|_child, _ctx, _scene| {
             // We don't call child.paint();
         });
 
@@ -213,9 +213,9 @@ fn check_forget_children_changed() {
                 Size::ZERO
             }
         })
-        .paint_fn(|child, ctx| {
+        .paint_fn(|child, ctx, scene| {
             if let Some(child) = child {
-                child.paint(ctx);
+                child.paint(ctx, scene);
             }
         })
         .children_fn(|child| {
@@ -272,8 +272,8 @@ fn check_recurse_layout_twice() {
 #[should_panic]
 #[test]
 fn check_recurse_paint_twice() {
-    let widget = make_parent_widget(Flex::row()).paint_fn(|child, ctx| {
-        child.paint(ctx);
+    let widget = make_parent_widget(Flex::row()).paint_fn(|child, ctx, scene| {
+        child.paint(ctx, scene);
     });
 
     let mut harness = TestHarness::create(widget);
@@ -307,8 +307,8 @@ fn check_paint_stashed() {
             ctx.set_stashed(child, true);
         })
         .layout_fn(|_child, _ctx, _bc| Size::ZERO)
-        .paint_fn(|child, ctx| {
-            child.paint(ctx);
+        .paint_fn(|child, ctx, scene| {
+            child.paint(ctx, scene);
         });
 
     let mut harness = TestHarness::create(widget);

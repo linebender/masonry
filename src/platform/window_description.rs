@@ -284,13 +284,13 @@ impl WindowConfig {
         }
 
         if let Some(size) = self.size {
-            builder.set_size(size);
+            builder.set_size((size.width, size.height).into());
         } else if let WindowSizePolicy::Content = self.size_policy {
-            builder.set_size(Size::new(0., 0.));
+            builder.set_size((0., 0.).into());
         }
 
         if let Some(position) = self.position {
-            builder.set_position(position);
+            builder.set_position((position.x, position.y).into());
         }
 
         if let Some(transparent) = self.transparent {
@@ -306,7 +306,7 @@ impl WindowConfig {
         }
 
         if let Some(min_size) = self.min_size {
-            builder.set_min_size(min_size);
+            builder.set_min_size((min_size.width, min_size.height).into());
         }
     }
 
@@ -321,14 +321,14 @@ impl WindowConfig {
         }
 
         if let Some(size) = self.size {
-            win_handle.set_size(size);
+            win_handle.set_size((size.width, size.height));
         }
 
         // Can't apply min size currently as window handle
         // does not support it.
 
         if let Some(position) = self.position {
-            win_handle.set_position(position);
+            win_handle.set_position((position.x, position.y));
         }
 
         // TODO - set_level ?

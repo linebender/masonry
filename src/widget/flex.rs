@@ -4,12 +4,15 @@
 
 //! A widget that arranges its children in a one-dimensional array.
 
-use piet_common::RenderContext;
+use kurbo::{Affine, Stroke};
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
+use vello::peniko::Brush;
+use vello::Scene;
 
 use crate::kurbo::common::FloatExt;
 use crate::kurbo::Vec2;
+use crate::paint_scene_helpers::stroke;
 use crate::theme::get_debug_color;
 use crate::widget::{WidgetMut, WidgetRef};
 use crate::{
@@ -686,9 +689,9 @@ impl Widget for Flex {
         my_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         for child in self.children.iter_mut().filter_map(|x| x.widget_mut()) {
-            child.paint(ctx);
+            child.paint(ctx, scene);
         }
 
         // paint the baseline if we're debugging layout
@@ -696,8 +699,9 @@ impl Widget for Flex {
             let color = get_debug_color(ctx.widget_id().to_raw());
             let my_baseline = ctx.size().height - ctx.widget_state.baseline_offset;
             let line = crate::kurbo::Line::new((0.0, my_baseline), (ctx.size().width, my_baseline));
-            let stroke_style = crate::piet::StrokeStyle::new().dash_pattern(&[4.0, 4.0]);
-            ctx.stroke_styled(line, &color, 1.0, &stroke_style);
+
+            let stroke_style = Stroke::new(1.0).with_dashes(0., [4.0, 4.0]);
+            scene.stroke(&stroke_style, Affine::IDENTITY, color, None, &line);
         }
     }
 

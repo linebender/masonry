@@ -11,11 +11,13 @@
 
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, Span};
+use vello::Scene;
 
+use crate::paint_scene_helpers::UnitPoint;
 use crate::widget::{WidgetPod, WidgetRef};
 use crate::{
     BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, Size,
-    StatusChange, UnitPoint, Widget,
+    StatusChange, Widget,
 };
 
 // TODO - Have child widget type as generic argument
@@ -137,8 +139,8 @@ impl Widget for Align {
         my_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        self.child.paint(ctx);
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        self.child.paint(ctx, scene);
     }
 
     fn children(&self) -> SmallVec<[WidgetRef<'_, dyn Widget>; 16]> {

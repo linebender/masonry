@@ -6,6 +6,8 @@
 
 use std::any::Any;
 
+use druid_shell::kurbo::Size;
+use druid_shell::piet::Piet;
 use druid_shell::text::InputHandler;
 use druid_shell::{
     AppHandler, FileDialogToken, FileInfo, IdleToken, KeyEvent, MouseEvent, Region, Scale,
@@ -13,8 +15,6 @@ use druid_shell::{
 };
 
 use crate::app_root::AppRoot;
-use crate::kurbo::Size;
-use crate::piet::Piet;
 use crate::{command as sys_cmd, Event, InternalEvent, Selector, WindowId};
 
 pub(crate) const RUN_COMMANDS_TOKEN: IdleToken = IdleToken::new(1);
@@ -111,12 +111,12 @@ impl WinHandler for MasonryWinHandler {
         self.app_state.prepare_paint(self.window_id);
     }
 
-    fn paint(&mut self, piet: &mut Piet, region: &Region) {
-        self.app_state.paint(self.window_id, piet, region);
+    fn paint(&mut self, piet: &mut Piet, _region: &Region) {
+        self.app_state.paint(self.window_id, piet);
     }
 
     fn size(&mut self, size: Size) {
-        let event = Event::WindowSize(size);
+        let event = Event::WindowSize((size.width, size.height).into());
         self.app_state.handle_event(event, self.window_id);
     }
 

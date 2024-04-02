@@ -10,6 +10,7 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::time::Duration;
 
+use druid_shell::piet::{Piet, PietText};
 use druid_shell::text::Event as ImeInvalidation;
 use druid_shell::{Cursor, Region, TimerToken, WindowHandle};
 use tracing::{error, trace, warn};
@@ -18,11 +19,10 @@ use crate::action::{Action, ActionQueue};
 use crate::command::{Command, CommandQueue, Notification, SingleUse};
 use crate::debug_logger::DebugLogger;
 use crate::ext_event::ExtEventSink;
-use crate::piet::{Piet, PietText, RenderContext};
 use crate::platform::WindowDescription;
 use crate::promise::PromiseToken;
 use crate::testing::MockTimerQueue;
-use crate::text::{ImeHandlerRef, TextFieldRegistration};
+use crate::text_helpers::TextFieldRegistration;
 use crate::widget::{CursorChange, FocusChange, StoreInWidgetMut, WidgetMut, WidgetState};
 use crate::{
     Affine, Insets, Point, Rect, Size, Target, Vec2, Widget, WidgetId, WidgetPod, WindowId,
@@ -107,39 +107,21 @@ pub struct LayoutCtx<'a, 'b> {
     pub(crate) mouse_pos: Option<Point>,
 }
 
-/// Z-order paint operations with transformations.
-pub(crate) struct ZOrderPaintOp {
-    pub z_index: u32,
-    pub paint_func: Box<dyn FnOnce(&mut PaintCtx) + 'static>,
-    pub transform: Affine,
-}
-
 /// A context passed to paint methods of widgets.
-///
-/// In addition to the API below, [`PaintCtx`] derefs to an implemention of
-/// the [`RenderContext`] trait, which defines the basic available drawing
-/// commands.
-pub struct PaintCtx<'a, 'b, 'c> {
+pub struct PaintCtx<'a, 'b> {
     pub(crate) global_state: &'a mut GlobalPassCtx<'b>,
     pub(crate) widget_state: &'a WidgetState,
-    /// The render context for actually painting.
-    pub render_ctx: &'a mut Piet<'c>,
-    /// The z-order paint operations.
-    pub(crate) z_ops: Vec<ZOrderPaintOp>,
-    /// The currently visible region.
-    pub(crate) region: Region,
     /// The approximate depth in the tree at the time of painting.
     pub(crate) depth: u32,
     pub(crate) debug_paint: bool,
     pub(crate) debug_widget: bool,
-    pub(crate) debug_widget_id: bool,
 }
 
 impl_context_method!(
     WidgetCtx<'_, '_>,
     EventCtx<'_, '_>,
     LifeCycleCtx<'_, '_>,
-    PaintCtx<'_, '_, '_>,
+    PaintCtx<'_, '_>,
     LayoutCtx<'_, '_>,
     {
         /// get the `WidgetId` of the current widget.
@@ -181,7 +163,7 @@ impl_context_method!(
     WidgetCtx<'_, '_>,
     EventCtx<'_, '_>,
     LifeCycleCtx<'_, '_>,
-    PaintCtx<'_, '_, '_>,
+    PaintCtx<'_, '_>,
     {
         /// The layout size.
         ///
@@ -215,7 +197,9 @@ impl_context_method!(
         /// [`Screen`]: druid_shell::Screen
         pub fn to_screen(&self, widget_point: Point) -> Point {
             let insets = self.window().content_insets();
-            let content_origin = self.window().get_position() + Vec2::new(insets.x0, insets.y0);
+            let window_pos = self.window().get_position();
+            let window_pos = Point::new(window_pos.x, window_pos.y);
+            let content_origin = window_pos + Vec2::new(insets.x0, insets.y0);
             content_origin + self.to_window(widget_point).to_vec2()
         }
 
@@ -407,25 +391,10 @@ impl<'a, 'b> LifeCycleCtx<'a, 'b> {
 
 // methods on event and lifecycle
 impl_context_method!(WidgetCtx<'_, '_>, EventCtx<'_, '_>, LifeCycleCtx<'_, '_>, {
-    /// Request a [`paint`] pass. This is equivalent to calling
-    /// [`request_paint_rect`](Self::request_paint_rect) for the widget's [`paint_rect`].
-    ///
+    /// Request a [`paint`] pass.
     /// [`paint`]: trait.Widget.html#tymethod.paint
-    /// [`paint_rect`]: struct.WidgetPod.html#method.paint_rect
     pub fn request_paint(&mut self) {
         trace!("request_paint");
-        self.widget_state.invalid.set_rect(
-            self.widget_state.paint_rect() - self.widget_state.layout_rect().origin().to_vec2(),
-        );
-    }
-
-    /// Request a [`paint`] pass for redrawing a rectangle, which is given
-    /// relative to our layout rectangle.
-    ///
-    /// [`paint`]: trait.Widget.html#tymethod.paint
-    pub fn request_paint_rect(&mut self, rect: Rect) {
-        trace!("request_paint_rect {}", rect);
-        self.widget_state.invalid.add_rect(rect);
     }
 
     /// Request a layout pass.
@@ -757,9 +726,8 @@ impl LifeCycleCtx<'_, '_> {
     }
 
     /// Register this widget as accepting text input.
-    pub fn register_text_input(&mut self, document: impl ImeHandlerRef + 'static) {
+    pub fn register_as_text_input(&mut self) {
         let registration = TextFieldRegistration {
-            document: Rc::new(document),
             widget_id: self.widget_id(),
         };
         self.widget_state.text_registrations.push(registration);
@@ -833,7 +801,7 @@ impl LayoutCtx<'_, '_> {
     }
 }
 
-impl PaintCtx<'_, '_, '_> {
+impl PaintCtx<'_, '_> {
     /// The depth in the tree of the currently painting widget.
     ///
     /// This may be used in combination with [`paint_with_z_index`](Self::paint_with_z_index) in order
@@ -844,83 +812,6 @@ impl PaintCtx<'_, '_, '_> {
     #[inline]
     pub fn depth(&self) -> u32 {
         self.depth
-    }
-
-    /// Returns the region that needs to be repainted.
-    #[inline]
-    pub fn region(&self) -> &Region {
-        &self.region
-    }
-
-    /// Creates a temporary `PaintCtx` with a new visible region, and calls
-    /// the provided function with that `PaintCtx`.
-    ///
-    /// This is used by containers to ensure that their children have the correct
-    /// visible region given their layout.
-    pub fn with_child_ctx(&mut self, region: impl Into<Region>, f: impl FnOnce(&mut PaintCtx)) {
-        let mut child_ctx = PaintCtx {
-            render_ctx: self.render_ctx,
-            global_state: self.global_state,
-            widget_state: self.widget_state,
-            z_ops: Vec::new(),
-            region: region.into(),
-            depth: self.depth + 1,
-            debug_paint: self.debug_paint,
-            debug_widget: self.debug_widget,
-            debug_widget_id: self.debug_widget_id,
-        };
-        f(&mut child_ctx);
-        self.z_ops.append(&mut child_ctx.z_ops);
-    }
-
-    /// Saves the current context, executes the closures, and restores the context.
-    ///
-    /// This is useful if you would like to transform or clip or otherwise
-    /// modify the drawing context but do not want that modification to
-    /// effect other widgets.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use masonry::{PaintCtx, RenderContext, theme};
-    /// # struct T;
-    /// # impl T {
-    /// fn paint(&mut self, ctx: &mut PaintCtx) {
-    ///     let clip_rect = ctx.size().to_rect().inset(5.0);
-    ///     ctx.with_save(|ctx| {
-    ///         ctx.clip(clip_rect);
-    ///         ctx.stroke(clip_rect, &theme::PRIMARY_DARK, 5.0);
-    ///     });
-    /// }
-    /// # }
-    /// ```
-    pub fn with_save(&mut self, f: impl FnOnce(&mut PaintCtx)) {
-        if let Err(e) = self.render_ctx.save() {
-            error!("Failed to save RenderContext: '{}'", e);
-            return;
-        }
-
-        f(self);
-
-        if let Err(e) = self.render_ctx.restore() {
-            error!("Failed to restore RenderContext: '{}'", e);
-        }
-    }
-
-    /// Allows to specify order for paint operations.
-    ///
-    /// Larger `z_index` indicate that an operation will be executed later.
-    pub fn paint_with_z_index(
-        &mut self,
-        z_index: u32,
-        paint_func: impl FnOnce(&mut PaintCtx) + 'static,
-    ) {
-        let current_transform = self.render_ctx.current_transform();
-        self.z_ops.push(ZOrderPaintOp {
-            z_index,
-            paint_func: Box::new(paint_func),
-            transform: current_transform,
-        })
     }
 }
 
@@ -976,19 +867,5 @@ impl<'a> GlobalPassCtx<'a> {
 
         self.timers.insert(timer_token, widget_id);
         timer_token
-    }
-}
-
-impl<'c> Deref for PaintCtx<'_, '_, 'c> {
-    type Target = Piet<'c>;
-
-    fn deref(&self) -> &Self::Target {
-        self.render_ctx
-    }
-}
-
-impl<'c> DerefMut for PaintCtx<'_, '_, 'c> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.render_ctx
     }
 }

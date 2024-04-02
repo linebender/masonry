@@ -6,15 +6,18 @@
 
 use std::ops::Range;
 
+use kurbo::Affine;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace_span, Span};
+use vello::peniko::BlendMode;
+use vello::Scene;
 
 use crate::kurbo::{Point, Rect, Size, Vec2};
 use crate::widget::scroll_bar::SCROLLBAR_MOVED;
 use crate::widget::{Axis, ScrollBar, StoreInWidgetMut, WidgetMut, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, RenderContext,
-    StatusChange, Widget, WidgetPod,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, StatusChange,
+    Widget, WidgetPod,
 };
 
 // TODO - refactor - see issue #15
@@ -345,20 +348,21 @@ impl<W: Widget> Widget for Portal<W> {
         portal_size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
-        // TODO - have ctx.clip also clip the invalidated region
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
+        // TODO - also clip the invalidated region
         let clip_rect = ctx.size().to_rect();
-        ctx.clip(clip_rect);
 
-        self.child.paint(ctx);
+        scene.push_layer(BlendMode::default(), 1., Affine::IDENTITY, &clip_rect);
+        self.child.paint(ctx, scene);
+        scene.pop_layer();
 
         if self.scrollbar_horizontal_visible {
-            self.scrollbar_horizontal.paint(ctx);
+            self.scrollbar_horizontal.paint(ctx, scene);
         } else {
             ctx.skip_child(&mut self.scrollbar_horizontal);
         }
         if self.scrollbar_vertical_visible {
-            self.scrollbar_vertical.paint(ctx);
+            self.scrollbar_vertical.paint(ctx, scene);
         } else {
             ctx.skip_child(&mut self.scrollbar_vertical);
         }

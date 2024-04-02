@@ -6,15 +6,18 @@
 
 use std::f64::INFINITY;
 
+use kurbo::Affine;
 use smallvec::{smallvec, SmallVec};
 use tracing::{trace, trace_span, warn, Span};
+use vello::peniko::{BlendMode, Color, Fill, Gradient};
+use vello::Scene;
 
 use crate::kurbo::RoundedRectRadii;
-use crate::piet::{Color, FixedGradient, LinearGradient, PaintBrush, RadialGradient};
+use crate::paint_scene_helpers::{fill_color, stroke};
 use crate::widget::{WidgetId, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
-    RenderContext, Size, StatusChange, Widget,
+    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, Size,
+    StatusChange, Widget,
 };
 
 // FIXME - Improve all doc in this module ASAP.
@@ -25,9 +28,7 @@ use crate::{
 #[allow(clippy::type_complexity)]
 pub enum BackgroundBrush {
     Color(Color),
-    Linear(LinearGradient),
-    Radial(RadialGradient),
-    Fixed(FixedGradient),
+    Gradient(Gradient),
     PainterFn(Box<dyn FnMut(&mut PaintCtx)>),
 }
 
@@ -335,17 +336,16 @@ impl Widget for SizedBox {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let corner_radius = self.corner_radius;
 
         if let Some(background) = self.background.as_mut() {
             let panel = ctx.size().to_rounded_rect(corner_radius);
 
             trace_span!("paint background").in_scope(|| {
-                ctx.with_save(|ctx| {
-                    ctx.clip(panel);
-                    background.paint(ctx);
-                });
+                scene.push_layer(BlendMode::default(), 1., Affine::IDENTITY, &panel);
+                background.paint(ctx, scene);
+                scene.pop_layer();
             });
         }
 
@@ -356,11 +356,11 @@ impl Widget for SizedBox {
                 .to_rect()
                 .inset(border_width / -2.0)
                 .to_rounded_rect(corner_radius);
-            ctx.stroke(border_rect, &border.color, border_width);
+            stroke(scene, &border_rect, &border.color, border_width);
         };
 
         if let Some(ref mut child) = self.child {
-            child.paint(ctx);
+            child.paint(ctx, scene);
         }
     }
 
@@ -381,13 +381,17 @@ impl Widget for SizedBox {
 
 impl BackgroundBrush {
     /// Draw this brush into a provided [`PaintCtx`].
-    pub fn paint(&mut self, ctx: &mut PaintCtx) {
+    pub fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let bounds = ctx.size().to_rect();
         match self {
-            Self::Color(color) => ctx.fill(bounds, color),
-            Self::Linear(grad) => ctx.fill(bounds, grad),
-            Self::Radial(grad) => ctx.fill(bounds, grad),
-            Self::Fixed(grad) => ctx.fill(bounds, grad),
+            Self::Color(color) => fill_color(scene, &bounds, *color),
+            Self::Gradient(grad) => scene.fill(
+                Fill::NonZero,
+                Affine::IDENTITY,
+                &*grad,
+                Some(Affine::IDENTITY),
+                &bounds,
+            ),
             Self::PainterFn(painter) => painter(ctx),
         }
     }
@@ -399,38 +403,15 @@ impl From<Color> for BackgroundBrush {
     }
 }
 
-impl From<LinearGradient> for BackgroundBrush {
-    fn from(src: LinearGradient) -> BackgroundBrush {
-        BackgroundBrush::Linear(src)
-    }
-}
-
-impl From<RadialGradient> for BackgroundBrush {
-    fn from(src: RadialGradient) -> BackgroundBrush {
-        BackgroundBrush::Radial(src)
-    }
-}
-
-impl From<FixedGradient> for BackgroundBrush {
-    fn from(src: FixedGradient) -> BackgroundBrush {
-        BackgroundBrush::Fixed(src)
+impl From<Gradient> for BackgroundBrush {
+    fn from(src: Gradient) -> BackgroundBrush {
+        BackgroundBrush::Gradient(src)
     }
 }
 
 impl<Painter: FnMut(&mut PaintCtx) + 'static> From<Painter> for BackgroundBrush {
     fn from(src: Painter) -> BackgroundBrush {
         BackgroundBrush::PainterFn(Box::new(src))
-    }
-}
-
-impl From<PaintBrush> for BackgroundBrush {
-    fn from(src: PaintBrush) -> BackgroundBrush {
-        match src {
-            PaintBrush::Linear(grad) => BackgroundBrush::Linear(grad),
-            PaintBrush::Radial(grad) => BackgroundBrush::Radial(grad),
-            PaintBrush::Fixed(grad) => BackgroundBrush::Fixed(grad),
-            PaintBrush::Color(color) => BackgroundBrush::Color(color),
-        }
     }
 }
 

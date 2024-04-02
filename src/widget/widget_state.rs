@@ -10,7 +10,7 @@ use druid_shell::{Cursor, Region};
 
 use crate::bloom::Bloom;
 use crate::kurbo::{Insets, Point, Rect, Size};
-use crate::text::TextFieldRegistration;
+use crate::text_helpers::TextFieldRegistration;
 use crate::widget::{CursorChange, FocusChange};
 use crate::WidgetId;
 
@@ -221,17 +221,6 @@ impl WidgetState {
             .with_origin(Point::ORIGIN)
             .inset(self.paint_insets);
         let offset = child_state.layout_rect().origin().to_vec2();
-        for &rect in child_state.invalid.rects() {
-            let rect = (rect + offset).intersect(clip);
-            if rect.area() != 0.0 {
-                self.invalid.add_rect(rect);
-            }
-        }
-        // Clearing the invalid rects here is less fragile than doing it while painting. The
-        // problem is that widgets (for example, Either) might choose not to paint certain
-        // invisible children, and we shouldn't allow these invisible children to accumulate
-        // invalid rects.
-        child_state.invalid.clear();
 
         self.needs_layout |= child_state.needs_layout;
         self.needs_window_origin |= child_state.needs_window_origin;

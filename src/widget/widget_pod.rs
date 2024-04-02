@@ -5,16 +5,16 @@
 use std::collections::VecDeque;
 
 use tracing::{info_span, trace, warn};
+use vello::Scene;
 
 use crate::contexts::GlobalPassCtx;
 use crate::kurbo::{Affine, Insets, Point, Rect, Shape, Size};
-use crate::text::TextLayout;
+use crate::paint_scene_helpers::stroke;
 use crate::theme::get_debug_color;
 use crate::widget::{FocusChange, WidgetRef, WidgetState};
 use crate::{
-    ArcStr, BoxConstraints, Color, Event, EventCtx, InternalEvent, InternalLifeCycle, LayoutCtx,
-    LifeCycle, LifeCycleCtx, Notification, PaintCtx, RenderContext, StatusChange, Target, Widget,
-    WidgetId,
+    BoxConstraints, Event, EventCtx, InternalEvent, InternalLifeCycle, LayoutCtx, LifeCycle,
+    LifeCycleCtx, Notification, PaintCtx, StatusChange, Target, Widget, WidgetId,
 };
 
 // TODO - rewrite links in doc
@@ -30,8 +30,7 @@ use crate::{
 pub struct WidgetPod<W> {
     pub(crate) state: WidgetState,
     pub(crate) inner: W,
-    // stashed layout so we don't recompute this when debugging
-    pub(crate) debug_widget_text: TextLayout<ArcStr>,
+    pub(crate) fragment: Scene,
 }
 
 // ---
@@ -54,7 +53,7 @@ impl<W: Widget> WidgetPod<W> {
         WidgetPod {
             state,
             inner,
-            debug_widget_text: TextLayout::new(),
+            fragment: Scene::new(),
         }
     }
 
@@ -1010,73 +1009,11 @@ impl<W: Widget> WidgetPod<W> {
 
     // --- PAINT ---
 
-    // TODO - make non-pub?
-    /// Paint a child widget.
-    ///
-    /// Generally called by container widgets as part of their [`Widget::paint`]
-    /// method.
-    ///
-    /// Note that this method does not apply the offset of the layout rect.
-    /// If that is desired, use [`paint`] instead.
-    ///
-    /// [`layout`]: trait.Widget.html#tymethod.layout
-    /// [`Widget::paint`]: trait.Widget.html#tymethod.paint
-    /// [`paint`]: #method.paint
-    pub fn paint_raw(&mut self, ctx: &mut PaintCtx) {
-        self.mark_as_visited();
-
-        // we need to do this before we borrow from self
-        if ctx.debug_widget_id {
-            self.make_widget_id_layout_if_needed(self.state.id, ctx);
-        }
-
-        self.call_widget_method_with_checks("paint", |widget_pod| {
-            // widget_pod is a reborrow of `self`
-
-            let mut inner_ctx = PaintCtx {
-                global_state: ctx.global_state,
-                widget_state: &widget_pod.state,
-                render_ctx: ctx.render_ctx,
-                z_ops: Vec::new(),
-                region: ctx.region.clone(),
-                depth: ctx.depth,
-                debug_paint: ctx.debug_paint,
-                debug_widget: ctx.debug_widget,
-                debug_widget_id: ctx.debug_widget_id,
-            };
-            widget_pod.inner.paint(&mut inner_ctx);
-
-            let debug_ids = widget_pod.state.is_hot && ctx.debug_widget_id;
-            if debug_ids {
-                // this also draws layout bounds
-                widget_pod.debug_paint_widget_ids(&mut inner_ctx);
-            }
-
-            if !debug_ids && ctx.debug_paint {
-                widget_pod.debug_paint_layout_bounds(&mut inner_ctx);
-            }
-
-            ctx.z_ops.append(&mut inner_ctx.z_ops);
-        });
-    }
-
     /// Paint the widget, translating it by the origin of its layout rectangle.
     ///
     /// This will recursively paint widgets, stopping if a widget's layout
     /// rect is outside of the currently visible region.
-    pub fn paint(&mut self, parent_ctx: &mut PaintCtx) {
-        self.paint_impl(parent_ctx, false)
-    }
-
-    // TODO - remove
-    /// Paint the widget, even if its paint rect is outside of the currently
-    /// visible region.
-    pub fn paint_always(&mut self, parent_ctx: &mut PaintCtx) {
-        self.paint_impl(parent_ctx, true)
-    }
-
-    /// Shared implementation that can skip drawing non-visible content.
-    fn paint_impl(&mut self, parent_ctx: &mut PaintCtx, paint_if_not_visible: bool) {
+    pub fn paint(&mut self, parent_ctx: &mut PaintCtx, scene: &mut Scene) {
         let _span = self.inner.make_trace_span().entered();
 
         if self.state.is_stashed {
@@ -1092,63 +1029,42 @@ impl<W: Widget> WidgetPod<W> {
         self.mark_as_visited();
         self.check_initialized("paint");
 
-        if !paint_if_not_visible && !parent_ctx.region().intersects(self.state.paint_rect()) {
-            return;
+        // TODO
+        let needs_paint = true;
+
+        if needs_paint {
+            self.call_widget_method_with_checks("paint", |widget_pod| {
+                // TODO - Handle invalidation regions
+                let mut child_ctx = PaintCtx {
+                    global_state: parent_ctx.global_state,
+                    widget_state: &widget_pod.state,
+                    depth: parent_ctx.depth + 1,
+                    debug_paint: parent_ctx.debug_paint,
+                    debug_widget: parent_ctx.debug_widget,
+                };
+
+                widget_pod.fragment.reset();
+                widget_pod
+                    .inner
+                    .paint(&mut child_ctx, &mut widget_pod.fragment);
+
+                if parent_ctx.debug_paint {
+                    widget_pod.debug_paint_layout_bounds(widget_pod.state.size);
+                }
+            });
         }
 
-        parent_ctx.with_save(|ctx| {
-            let layout_origin = self.layout_rect().origin().to_vec2();
-            ctx.transform(Affine::translate(layout_origin));
-            let mut visible = ctx.region().clone();
-            visible.intersect_with(self.state.paint_rect());
-            visible -= layout_origin;
-            ctx.with_child_ctx(visible, |ctx| self.paint_raw(ctx));
-        });
+        let transform = Affine::translate(self.state.origin.to_vec2());
+        scene.append(&self.fragment, Some(transform));
     }
 
-    // FIXME - Add snapshot test for debug_widget_text
-
-    fn make_widget_id_layout_if_needed(&mut self, id: WidgetId, ctx: &mut PaintCtx) {
-        if self.debug_widget_text.needs_rebuild() {
-            // switch text color based on background, this is meh and that's okay
-            let border_color = get_debug_color(id.to_raw());
-            let (r, g, b, _) = border_color.as_rgba8();
-            let avg = (r as u32 + g as u32 + b as u32) / 3;
-            let text_color = if avg < 128 {
-                Color::WHITE
-            } else {
-                Color::BLACK
-            };
-            let id_string = id.to_raw().to_string();
-            self.debug_widget_text.set_text(id_string.into());
-            self.debug_widget_text.set_text_size(10.0);
-            self.debug_widget_text.set_text_color(text_color);
-            self.debug_widget_text.rebuild_if_needed(ctx.text());
-        }
-    }
-
-    fn debug_paint_widget_ids(&self, ctx: &mut PaintCtx) {
-        // we clone because we need to move it for paint_with_z_index
-        let text = self.debug_widget_text.clone();
-        let text_size = text.size();
-        let origin = ctx.size().to_vec2() - text_size.to_vec2();
-        let border_color = get_debug_color(ctx.widget_id().to_raw());
-        self.debug_paint_layout_bounds(ctx);
-
-        ctx.paint_with_z_index(ctx.depth(), move |ctx| {
-            let origin = Point::new(origin.x.max(0.0), origin.y.max(0.0));
-            let text_rect = Rect::from_origin_size(origin, text_size);
-            ctx.fill(text_rect, &border_color);
-            text.draw(ctx, origin);
-        })
-    }
-
-    fn debug_paint_layout_bounds(&self, ctx: &mut PaintCtx) {
+    fn debug_paint_layout_bounds(&mut self, size: Size) {
         const BORDER_WIDTH: f64 = 1.0;
-        let rect = ctx.size().to_rect().inset(BORDER_WIDTH / -2.0);
+        let rect = size.to_rect().inset(BORDER_WIDTH / -2.0);
         let id = self.id().to_raw();
         let color = get_debug_color(id);
-        ctx.stroke(rect, &color, BORDER_WIDTH);
+        let scene = &mut self.fragment;
+        stroke(scene, &rect, &color, BORDER_WIDTH);
     }
 }
 

@@ -93,7 +93,7 @@
 
 pub use druid_shell as shell;
 #[doc(inline)]
-pub use druid_shell::{kurbo, piet};
+pub use kurbo;
 
 #[macro_use]
 mod util;
@@ -109,10 +109,11 @@ mod contexts;
 mod event;
 pub mod ext_event;
 mod mouse;
+pub mod paint_scene_helpers;
 mod platform;
 pub mod promise;
 pub mod testing;
-pub mod text;
+pub mod text_helpers;
 pub mod theme;
 pub mod widget;
 
@@ -131,10 +132,11 @@ pub use druid_shell::Error as PlatformError;
 pub use event::{Event, InternalEvent, InternalLifeCycle, LifeCycle, StatusChange};
 pub use kurbo::{Affine, Insets, Point, Rect, Size, Vec2};
 pub use mouse::MouseEvent;
-pub use piet::{Color, ImageBuf, LinearGradient, RadialGradient, RenderContext, UnitPoint};
 pub use platform::{
     MasonryWinHandler, WindowConfig, WindowDescription, WindowId, WindowSizePolicy,
 };
-pub use text::ArcStr;
 pub use util::{AsAny, Handled};
+pub use vello::peniko::{Color, Gradient};
 pub use widget::{BackgroundBrush, Widget, WidgetId, WidgetPod, WidgetState};
+
+pub use text_helpers::ArcStr;

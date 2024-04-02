@@ -6,14 +6,17 @@
 
 use std::f64::consts::PI;
 
+use kurbo::{Affine, Cap, Stroke};
 use smallvec::SmallVec;
 use tracing::trace;
+use vello::Scene;
 
 use crate::kurbo::Line;
+use crate::paint_scene_helpers::stroke;
 use crate::widget::WidgetRef;
 use crate::{
     theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, RenderContext, Size, StatusChange, Vec2, Widget,
+    Point, Size, StatusChange, Vec2, Widget,
 };
 
 // TODO - Set color
@@ -103,11 +106,14 @@ impl Widget for Spinner {
         size
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx) {
+    fn paint(&mut self, ctx: &mut PaintCtx, scene: &mut Scene) {
         let t = self.t;
         let (width, height) = (ctx.size().width, ctx.size().height);
         let center = Point::new(width / 2.0, height / 2.0);
-        let (r, g, b, original_alpha) = Color::as_rgba(self.color);
+        let (r, g, b, original_alpha) = {
+            let c = self.color;
+            (c.r, c.g, c.b, c.a)
+        };
         let scale_factor = width.min(height) / 40.0;
 
         for step in 1..=12 {
@@ -117,12 +123,15 @@ impl Widget for Spinner {
             let angle = Vec2::from_angle((step / 12.0) * -2.0 * PI);
             let ambit_start = center + (10.0 * scale_factor * angle);
             let ambit_end = center + (20.0 * scale_factor * angle);
-            let color = Color::rgba(r, g, b, fade * original_alpha);
+            let alpha = (fade * original_alpha as f64) as u8;
+            let color = Color::rgba8(r, g, b, alpha);
 
-            ctx.stroke(
-                Line::new(ambit_start, ambit_end),
+            scene.stroke(
+                &Stroke::new(3.0 * scale_factor).with_caps(Cap::Square),
+                Affine::IDENTITY,
                 &color,
-                3.0 * scale_factor,
+                None,
+                &Line::new(ambit_start, ambit_end),
             );
         }
     }
