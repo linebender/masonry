@@ -7,12 +7,10 @@
 use kurbo::{Affine, Stroke};
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
-use vello::peniko::Brush;
 use vello::Scene;
 
 use crate::kurbo::common::FloatExt;
 use crate::kurbo::Vec2;
-use crate::paint_scene_helpers::stroke;
 use crate::theme::get_debug_color;
 use crate::widget::{WidgetMut, WidgetRef};
 use crate::{

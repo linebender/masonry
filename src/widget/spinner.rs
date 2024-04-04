@@ -12,7 +12,6 @@ use tracing::trace;
 use vello::Scene;
 
 use crate::kurbo::Line;
-use crate::paint_scene_helpers::stroke;
 use crate::widget::WidgetRef;
 use crate::{
     theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,

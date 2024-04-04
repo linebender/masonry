@@ -6,7 +6,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use druid_shell::{Cursor, Region};
+use druid_shell::Cursor;
 
 use crate::bloom::Bloom;
 use crate::kurbo::{Insets, Point, Rect, Size};
@@ -68,8 +68,6 @@ pub struct WidgetState {
     // --- PASSES ---
 
     // TODO: consider using bitflags for the booleans.
-    // The region that needs to be repainted, relative to the widget's bounds.
-    pub(crate) invalid: Region,
     /// A flag used to track and debug missing calls to place_child.
     pub(crate) is_expecting_place_child_call: bool,
 
@@ -154,7 +152,6 @@ impl WidgetState {
             is_expecting_place_child_call: false,
             paint_insets: Insets::ZERO,
             local_paint_rect: Rect::ZERO,
-            invalid: Region::EMPTY,
             is_portal: false,
             is_new: true,
             children_disabled_changed: false,
@@ -213,15 +210,6 @@ impl WidgetState {
     ///
     /// This method is idempotent and can be called multiple times.
     pub(crate) fn merge_up(&mut self, child_state: &mut WidgetState) {
-        // TODO - Ideally, we'd want to do this in global coordinates. The problem
-        // is that a parent could change this widget's coordinates through place_child
-        // later in the same pass
-        let clip = self
-            .layout_rect()
-            .with_origin(Point::ORIGIN)
-            .inset(self.paint_insets);
-        let offset = child_state.layout_rect().origin().to_vec2();
-
         self.needs_layout |= child_state.needs_layout;
         self.needs_window_origin |= child_state.needs_window_origin;
         self.request_anim |= child_state.request_anim;

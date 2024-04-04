@@ -5,6 +5,8 @@
 //! An Image widget.
 //! Please consider using SVG and the SVG widget as it scales much better.
 
+#![allow(unused)]
+
 use smallvec::SmallVec;
 use tracing::{trace, trace_span, Span};
 use vello::Scene;

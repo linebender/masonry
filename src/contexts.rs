@@ -6,14 +6,12 @@
 
 use std::any::Any;
 use std::collections::{HashMap, VecDeque};
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
 use std::time::Duration;
 
-use druid_shell::piet::{Piet, PietText};
+use druid_shell::piet::PietText;
 use druid_shell::text::Event as ImeInvalidation;
-use druid_shell::{Cursor, Region, TimerToken, WindowHandle};
-use tracing::{error, trace, warn};
+use druid_shell::{Cursor, TimerToken, WindowHandle};
+use tracing::{trace, warn};
 
 use crate::action::{Action, ActionQueue};
 use crate::command::{Command, CommandQueue, Notification, SingleUse};
@@ -24,9 +22,7 @@ use crate::promise::PromiseToken;
 use crate::testing::MockTimerQueue;
 use crate::text_helpers::TextFieldRegistration;
 use crate::widget::{CursorChange, FocusChange, StoreInWidgetMut, WidgetMut, WidgetState};
-use crate::{
-    Affine, Insets, Point, Rect, Size, Target, Vec2, Widget, WidgetId, WidgetPod, WindowId,
-};
+use crate::{Insets, Point, Rect, Size, Target, Vec2, Widget, WidgetId, WidgetPod, WindowId};
 
 /// A macro for implementing methods on multiple contexts.
 ///

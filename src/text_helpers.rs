@@ -1,3 +1,5 @@
+//! Helper functions for working with text in Masonry.
+
 use parley::Layout;
 use vello::{
     kurbo::Affine,
@@ -20,6 +22,7 @@ pub(crate) struct TextFieldRegistration {
     pub widget_id: WidgetId,
 }
 
+/// A function that renders laid out glyphs to a [Scene].
 pub fn render_text(scene: &mut Scene, transform: Affine, layout: &Layout<Brush>) {
     for line in layout.lines() {
         for glyph_run in line.glyph_runs() {

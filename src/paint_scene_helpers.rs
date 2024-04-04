@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use vello::{
     kurbo::{self, Affine, Rect, Shape, Stroke},
     peniko::{BrushRef, Color, ColorStopsSource, Fill, Gradient},

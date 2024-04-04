@@ -3,6 +3,7 @@
 // details.
 
 #![allow(missing_docs)]
+#![allow(unused)]
 
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
@@ -167,7 +168,7 @@ impl Widget for ScrollBar {
                 }
                 ctx.request_paint();
             }
-            Event::MouseUp(event) => {
+            Event::MouseUp(_event) => {
                 self.grab_anchor = None;
                 ctx.set_active(false);
                 ctx.request_paint();
@@ -176,11 +177,11 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, event: &StatusChange) {}
+    fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 
-    fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {}
+    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle) {}
 
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
+    fn layout(&mut self, _ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
         // TODO - handle resize
 
         let scrollbar_width = theme::SCROLLBAR_WIDTH;

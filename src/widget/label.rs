@@ -8,7 +8,6 @@ use kurbo::Affine;
 use parley::style::{FontFamily, FontStack, GenericFamily, StyleProperty};
 use parley::{FontContext, Layout};
 use smallvec::SmallVec;
-use swash::Weight;
 use tracing::{trace, trace_span, Span};
 use vello::peniko::{BlendMode, Brush};
 use vello::Scene;
@@ -192,13 +191,13 @@ impl LabelMut<'_, '_> {
 // --- TRAIT IMPLS ---
 
 impl Widget for Label {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {}
+    fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event) {}
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {
         match event {
-            LifeCycle::DisabledChanged(disabled) => {
+            LifeCycle::DisabledChanged(_) => {
                 // TODO - only request paint
                 ctx.request_layout();
             }
@@ -206,7 +205,7 @@ impl Widget for Label {
         }
     }
 
-    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
+    fn layout(&mut self, _ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
         // Compute max_advance from box constraints
         let max_advance = if self.line_break_mode != LineBreaking::WordWrap {
             None
