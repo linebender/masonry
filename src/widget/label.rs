@@ -219,7 +219,7 @@ impl Widget for Label {
         };
 
         // FIXME
-        let font_cx = &mut FontContext::new();
+        let font_cx = &mut FontContext::default();
 
         // TODO - Handle baseline
 
