@@ -27,6 +27,7 @@ mod spinner;
 mod split;
 mod textbox;
 
+pub use self::image::Image;
 pub use align::Align;
 pub use button::Button;
 pub use checkbox::Checkbox;
@@ -37,6 +38,12 @@ pub use scroll_bar::ScrollBar;
 pub use sized_box::SizedBox;
 pub use spinner::Spinner;
 pub use split::Split;
+pub use widget_mut::WidgetMut;
+pub use widget_pod::WidgetPod;
+pub use widget_ref::WidgetRef;
+pub use widget_state::WidgetState;
+
+pub use sized_box::BackgroundBrush;
 //pub use textbox::TextBox;
 pub use widget::StoreInWidgetMut;
 #[doc(hidden)]
@@ -44,15 +51,6 @@ pub use widget::{Widget, WidgetId};
 //#[doc(hidden)]
 //pub use widget_ext::WidgetExt;
 //pub use widget_wrapper::WidgetWrapper;
-pub use widget_mut::WidgetMut;
-pub use widget_pod::WidgetPod;
-pub use widget_ref::WidgetRef;
-pub use widget_state::WidgetState;
-
-#[cfg(FALSE)]
-pub use self::image::Image;
-
-pub use sized_box::BackgroundBrush;
 
 /// Methods by which a widget can attempt to change focus state.
 #[derive(Debug, Clone, Copy)]
