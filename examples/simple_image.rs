@@ -10,15 +10,19 @@
 #![windows_subsystem = "windows"]
 
 use masonry::widget::{FillStrat, Image};
-use masonry::{AppLauncher, ImageBuf, WindowDescription};
+use masonry::{AppLauncher, WindowDescription};
+use vello::peniko::{Format, Image as ImageBuf};
 
 pub fn main() {
-    let png_data = ImageBuf::from_data(include_bytes!("./assets/PicWithAlpha.png")).unwrap();
+    let image_bytes = include_bytes!("./assets/PicWithAlpha.png");
+    let image_data = image::load_from_memory(image_bytes).unwrap().to_rgba8();
+    let (width, height) = image_data.dimensions();
+    let png_data = ImageBuf::new(image_data.to_vec().into(), Format::Rgba8, width, height);
     let image = Image::new(png_data).fill_mode(FillStrat::Contain);
 
     let main_window = WindowDescription::new(image)
         .window_size((650., 450.))
-        .title("Flex Container Options");
+        .title("Simple image example");
 
     AppLauncher::with_window(main_window)
         .log_to_console()

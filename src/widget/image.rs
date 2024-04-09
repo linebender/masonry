@@ -17,6 +17,8 @@ use crate::{
     StatusChange, Widget,
 };
 
+// TODO - Resolve name collision between masonry::Image and peniko::Image
+
 /// A widget that renders a bitmap Image.
 ///
 /// The underlying image uses `Arc` for buffer data, making it cheap to clone.
