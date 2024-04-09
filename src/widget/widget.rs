@@ -102,10 +102,6 @@ pub trait Widget: AsAny {
 
     /// Paint the widget appearance.
     ///
-    /// The [`PaintCtx`] derefs to something that implements the
-    /// [`piet::RenderContext`](crate::piet::RenderContext) trait, which exposes various methods that the widget
-    /// can use to paint its appearance.
-    ///
     /// Container widgets can paint a background before recursing to their
     /// children, or annotations (for example, scrollbars) by painting
     /// afterwards. In addition, they can apply masks and transforms on

@@ -154,8 +154,6 @@ macro_rules! assert_render_snapshot {
 }
 
 // TODO - merge
-/// All of the state except for the `Piet` (render context). We need to pass
-/// that in to get around some lifetime issues.
 struct MockAppRoot {
     window: WindowRoot,
     command_queue: CommandQueue,

@@ -29,7 +29,6 @@ pub fn stroke<'b>(
     );
 }
 
-// Note: copied from piet
 #[allow(unused)]
 impl UnitPoint {
     /// `(0.0, 0.0)`

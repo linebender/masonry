@@ -25,7 +25,6 @@ mod scroll_bar;
 mod sized_box;
 mod spinner;
 mod split;
-mod textbox;
 
 pub use self::image::Image;
 pub use align::Align;
@@ -44,13 +43,9 @@ pub use widget_ref::WidgetRef;
 pub use widget_state::WidgetState;
 
 pub use sized_box::BackgroundBrush;
-//pub use textbox::TextBox;
 pub use widget::StoreInWidgetMut;
 #[doc(hidden)]
 pub use widget::{Widget, WidgetId};
-//#[doc(hidden)]
-//pub use widget_ext::WidgetExt;
-//pub use widget_wrapper::WidgetWrapper;
 
 /// Methods by which a widget can attempt to change focus state.
 #[derive(Debug, Clone, Copy)]

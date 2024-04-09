@@ -8,7 +8,6 @@ use std::any::Any;
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
-use druid_shell::piet::PietText;
 use druid_shell::text::Event as ImeInvalidation;
 use druid_shell::{Cursor, TimerToken, WindowHandle};
 use tracing::{trace, warn};
@@ -53,7 +52,6 @@ pub(crate) struct GlobalPassCtx<'a> {
     pub(crate) mock_timer_queue: Option<&'a mut MockTimerQueue>,
     pub(crate) window_id: WindowId,
     pub(crate) window: &'a WindowHandle,
-    pub(crate) text: PietText,
     /// The id of the widget that currently has focus.
     pub(crate) focus_widget: Option<WidgetId>,
 }
@@ -133,11 +131,6 @@ impl_context_method!(
         /// Get the `WindowId` of the current window.
         pub fn window_id(&self) -> WindowId {
             self.global_state.window_id
-        }
-
-        /// Get an object which can create text layouts.
-        pub fn text(&mut self) -> &mut PietText {
-            &mut self.global_state.text
         }
 
         /// Skip iterating over the given child.
@@ -834,7 +827,6 @@ impl<'a> GlobalPassCtx<'a> {
             window,
             window_id,
             focus_widget,
-            text: window.text(),
         }
     }
 
