@@ -34,6 +34,7 @@ use crate::widget::{StoreInWidgetMut, WidgetMut, WidgetRef};
 use crate::*;
 
 // TODO - Get shorter names
+// TODO - Make them associated consts
 /// Default canvas size for tests.
 pub const HARNESS_DEFAULT_SIZE: Size = Size::new(400., 400.);
 

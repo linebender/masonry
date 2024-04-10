@@ -54,7 +54,7 @@ impl Button {
     /// use masonry::Color;
     /// use masonry::widget::{Button, Label};
     ///
-    /// let label = Label::new("Increment").with_text_color(Color::grey(0.5));
+    /// let label = Label::new("Increment").with_text_color(Color::rgb(0.5, 0.5, 0.5));
     /// let button = Button::from_label(label);
     /// ```
     pub fn from_label(label: Label) -> Button {

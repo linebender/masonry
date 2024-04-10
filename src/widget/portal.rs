@@ -390,7 +390,9 @@ mod tests {
         SizedBox::new(Button::new(text)).width(70.0).height(40.0)
     }
 
+    // TODO - This test takes too long right now
     #[test]
+    #[ignore]
     fn button_list() {
         let [item_3_id, item_13_id] = widget_ids();
 

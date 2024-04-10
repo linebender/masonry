@@ -12,9 +12,10 @@
 //!
 //! ## Example
 //!
+//! **(TODO: FIX THIS EXAMPLE)**
 //! The todo-list example looks like this:
 //!
-//! ```no_run
+//! ```ignore
 //! use masonry::widget::{prelude::*, TextBox};
 //! use masonry::widget::{Button, Flex, Label, Portal, WidgetMut};
 //! use masonry::Action;

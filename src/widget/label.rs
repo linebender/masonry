@@ -5,6 +5,7 @@
 //! A label widget.
 
 use kurbo::Affine;
+use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, GenericFamily, StyleProperty};
 use parley::{FontContext, Layout};
 use smallvec::SmallVec;
@@ -30,6 +31,7 @@ pub struct Label {
     line_break_mode: LineBreaking,
     disabled: bool,
     text_color: Color,
+    alignment: Alignment,
 }
 
 crate::declare_widget!(LabelMut, Label);
@@ -59,22 +61,16 @@ impl Label {
             font_family: FontFamily::Generic(GenericFamily::SystemUi),
             line_break_mode: LineBreaking::Overflow,
             disabled: false,
+            alignment: Alignment::Start,
         }
     }
 
     /// Create a label with empty text.
     pub fn empty() -> Self {
-        Self {
-            current_text: "".into(),
-            text_layout: None,
-            text_color: crate::theme::TEXT_COLOR,
-            text_size: crate::theme::TEXT_SIZE_NORMAL as f32,
-            font_family: FontFamily::Generic(GenericFamily::SystemUi),
-            line_break_mode: LineBreaking::Overflow,
-            disabled: false,
-        }
+        Self::new("")
     }
 
+    // TODO - Rename methods
     /// Builder-style method for setting the text string.
     pub fn with_text(mut self, new_text: impl Into<ArcStr>) -> Self {
         self.current_text = new_text.into();
@@ -107,10 +103,9 @@ impl Label {
         self
     }
 
-    #[cfg(FALSE)]
-    /// Builder-style method to set the [`TextAlignment`].
-    pub fn with_text_alignment(mut self, alignment: TextAlignment) -> Self {
-        self.text_layout.set_text_alignment(alignment);
+    /// Builder-style method to set the [`Alignment`].
+    pub fn with_text_alignment(mut self, alignment: Alignment) -> Self {
+        self.alignment = alignment;
         self
     }
 
@@ -136,9 +131,9 @@ impl Label {
         let mut layout_builder = lcx.ranged_builder(font_cx, &self.current_text, 1.0);
 
         layout_builder.push_default(&StyleProperty::FontStack(FontStack::Single(
-            FontFamily::Generic(parley::style::GenericFamily::SystemUi),
+            self.font_family,
         )));
-        layout_builder.push_default(&StyleProperty::FontSize(15.0));
+        layout_builder.push_default(&StyleProperty::FontSize(self.text_size));
         layout_builder.push_default(&StyleProperty::Brush(Brush::Solid(color)));
 
         // TODO - Refactor. This code is mostly copy-pasted from Xilem's text widget
@@ -180,10 +175,9 @@ impl LabelMut<'_, '_> {
         self.ctx.request_layout();
     }
 
-    #[cfg(FALSE)]
-    /// Set the [`TextAlignment`] for this layout.
-    pub fn set_text_alignment(&mut self, alignment: TextAlignment) {
-        self.widget.text_layout.set_text_alignment(alignment);
+    /// Set the [`Alignment`] for this layout.
+    pub fn set_text_alignment(&mut self, alignment: Alignment) {
+        self.widget.alignment = alignment;
         self.ctx.request_layout();
     }
 }
@@ -223,8 +217,9 @@ impl Widget for Label {
         // TODO - Handle baseline
 
         // Lay text out
+        let alignment = self.alignment;
         let layout = self.get_layout_mut(font_cx);
-        layout.break_all_lines(max_advance, parley::layout::Alignment::Start);
+        layout.break_all_lines(max_advance, alignment);
         let size = Size {
             width: layout.width() as f64 + 2. * LABEL_X_PADDING,
             height: layout.height() as f64,
@@ -279,7 +274,6 @@ mod tests {
     use super::*;
     use crate::assert_render_snapshot;
     use crate::testing::TestHarness;
-    #[cfg(FALSE)]
     use crate::theme::{PRIMARY_DARK, PRIMARY_LIGHT};
     use crate::widget::{Flex, SizedBox};
 
@@ -293,15 +287,14 @@ mod tests {
         assert_render_snapshot!(harness, "hello");
     }
 
-    #[cfg(FALSE)]
     #[test]
     fn styled_label() {
         let label = Label::new("The quick brown fox jumps over the lazy dog")
             .with_text_color(PRIMARY_LIGHT)
-            .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
+            .with_font_family(FontFamily::Generic(GenericFamily::Monospace))
             .with_text_size(20.0)
             .with_line_break_mode(LineBreaking::WordWrap)
-            .with_text_alignment(TextAlignment::Center);
+            .with_text_alignment(Alignment::Middle);
 
         let mut harness = TestHarness::create_with_size(label, Size::new(200.0, 200.0));
 
@@ -342,16 +335,15 @@ mod tests {
         assert_render_snapshot!(harness, "line_break_modes");
     }
 
-    #[cfg(FALSE)]
     #[test]
     fn edit_label() {
         let image_1 = {
             let label = Label::new("The quick brown fox jumps over the lazy dog")
                 .with_text_color(PRIMARY_LIGHT)
-                .with_font(FontDescriptor::new(FontFamily::MONOSPACE))
+                .with_font_family(FontFamily::Generic(GenericFamily::Monospace))
                 .with_text_size(20.0)
                 .with_line_break_mode(LineBreaking::WordWrap)
-                .with_text_alignment(TextAlignment::Center);
+                .with_text_alignment(Alignment::Middle);
 
             let mut harness = TestHarness::create_with_size(label, Size::new(50.0, 50.0));
 
@@ -369,10 +361,10 @@ mod tests {
                 let mut label = label.downcast::<Label>().unwrap();
                 label.set_text("The quick brown fox jumps over the lazy dog");
                 label.set_text_color(PRIMARY_LIGHT);
-                label.set_font(FontDescriptor::new(FontFamily::MONOSPACE));
+                label.set_font_family(FontFamily::Generic(GenericFamily::Monospace));
                 label.set_text_size(20.0);
                 label.set_line_break_mode(LineBreaking::WordWrap);
-                label.set_text_alignment(TextAlignment::Center);
+                label.set_text_alignment(Alignment::Middle);
             });
 
             harness.render()
