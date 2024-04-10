@@ -64,7 +64,7 @@ impl Widget for CustomWidget {
         // and we only want to clear this widget's area.
         let size = ctx.size();
         let rect = size.to_rect();
-        scene.fill(Fill::NonZero, Affine::IDENTITY, &Color::WHITE, None, &rect);
+        scene.fill(Fill::NonZero, Affine::IDENTITY, Color::WHITE, None, &rect);
 
         // Create an arbitrary bezier path
         let mut path = BezPath::new();
@@ -76,7 +76,7 @@ impl Widget for CustomWidget {
         scene.stroke(
             &Stroke::new(5.0),
             Affine::IDENTITY,
-            &stroke_color,
+            stroke_color,
             None,
             &path,
         );
@@ -85,11 +85,11 @@ impl Widget for CustomWidget {
         let rect = Rect::from_origin_size((10.0, 10.0), (100.0, 100.0));
         // Note the Color:rgba8 which includes an alpha channel (7F in this case)
         let fill_color = Color::rgba8(0x00, 0x00, 0x00, 0x7F);
-        scene.fill(Fill::NonZero, Affine::IDENTITY, &fill_color, None, &rect);
+        scene.fill(Fill::NonZero, Affine::IDENTITY, fill_color, None, &rect);
 
         // To render text, we first create a LayoutBuilder and set the text properties.
         // FIXME
-        let mut font_cx = &mut FontContext::default();
+        let mut font_cx = FontContext::default();
         let mut lcx = parley::LayoutContext::new();
         let mut text_layout_builder = lcx.ranged_builder(&mut font_cx, &self.0, 1.0);
 

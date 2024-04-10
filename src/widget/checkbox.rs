@@ -134,7 +134,7 @@ impl Widget for Checkbox {
             theme::BORDER_DARK
         };
 
-        stroke(scene, &rect, &border_color, border_width);
+        stroke(scene, &rect, border_color, border_width);
 
         if self.checked {
             // Paint the checkmark

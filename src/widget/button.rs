@@ -155,7 +155,7 @@ impl Widget for Button {
             theme::BORDER_DARK
         };
 
-        stroke(scene, &rounded_rect, &border_color, stroke_width);
+        stroke(scene, &rounded_rect, border_color, stroke_width);
         fill_lin_gradient(
             scene,
             &rounded_rect,

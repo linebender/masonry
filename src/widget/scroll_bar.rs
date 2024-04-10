@@ -210,7 +210,7 @@ impl Widget for ScrollBar {
         stroke(
             scene,
             &cursor_rect,
-            &theme::SCROLLBAR_BORDER_COLOR,
+            theme::SCROLLBAR_BORDER_COLOR,
             edge_width,
         );
     }

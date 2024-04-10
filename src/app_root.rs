@@ -1192,7 +1192,7 @@ impl WindowRoot {
         scene.fill(
             Fill::NonZero,
             Affine::IDENTITY,
-            &Color::TRANSPARENT,
+            Color::TRANSPARENT,
             None,
             &empty_path,
         );

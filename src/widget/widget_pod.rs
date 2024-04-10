@@ -1064,7 +1064,7 @@ impl<W: Widget> WidgetPod<W> {
         let id = self.id().to_raw();
         let color = get_debug_color(id);
         let scene = &mut self.fragment;
-        stroke(scene, &rect, &color, BORDER_WIDTH);
+        stroke(scene, &rect, color, BORDER_WIDTH);
     }
 }
 

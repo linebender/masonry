@@ -285,8 +285,8 @@ impl Split {
             ),
         };
         let splitter_color = self.bar_color();
-        stroke(scene, &line1, &splitter_color, line_width);
-        stroke(scene, &line2, &splitter_color, line_width);
+        stroke(scene, &line1, splitter_color, line_width);
+        stroke(scene, &line2, splitter_color, line_width);
     }
 }
 

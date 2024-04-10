@@ -356,7 +356,7 @@ impl Widget for SizedBox {
                 .to_rect()
                 .inset(border_width / -2.0)
                 .to_rounded_rect(corner_radius);
-            stroke(scene, &border_rect, &border.color, border_width);
+            stroke(scene, &border_rect, border.color, border_width);
         };
 
         if let Some(ref mut child) = self.child {

@@ -128,7 +128,7 @@ impl Widget for Spinner {
             scene.stroke(
                 &Stroke::new(3.0 * scale_factor).with_caps(Cap::Square),
                 Affine::IDENTITY,
-                &color,
+                color,
                 None,
                 &Line::new(ambit_start, ambit_end),
             );
