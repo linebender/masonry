@@ -16,8 +16,8 @@ use crate::kurbo::RoundedRectRadii;
 use crate::paint_scene_helpers::{fill_color, stroke};
 use crate::widget::{WidgetId, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, Size,
-    StatusChange, Widget,
+    BoxConstraints, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point, PointerEvent,
+    Size, StatusChange, TextEvent, Widget,
 };
 
 // FIXME - Improve all doc in this module ASAP.
@@ -170,7 +170,7 @@ impl SizedBox {
     // TODO - child()
 }
 
-impl<'a, 'b> SizedBoxMut<'a, 'b> {
+impl<'a> SizedBoxMut<'a> {
     pub fn set_child(&mut self, child: impl Widget) {
         self.widget.child = Some(WidgetPod::new(child).boxed());
         self.ctx.children_changed();
@@ -244,7 +244,7 @@ impl<'a, 'b> SizedBoxMut<'a, 'b> {
     }
 
     // TODO - Doc
-    pub fn child_mut(&mut self) -> Option<WidgetMut<'_, 'b, Box<dyn Widget>>> {
+    pub fn child_mut(&mut self) -> Option<WidgetMut<'_, Box<dyn Widget>>> {
         let child = self.widget.child.as_mut()?;
         Some(self.ctx.get_mut(child))
     }
@@ -283,9 +283,15 @@ impl SizedBox {
 }
 
 impl Widget for SizedBox {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
+    fn on_pointer_event(&mut self, ctx: &mut EventCtx, event: &PointerEvent) {
         if let Some(ref mut child) = self.child {
-            child.on_event(ctx, event);
+            child.on_pointer_event(ctx, event);
+        }
+    }
+
+    fn on_text_event(&mut self, ctx: &mut EventCtx, event: &TextEvent) {
+        if let Some(ref mut child) = self.child {
+            child.on_text_event(ctx, event);
         }
     }
 

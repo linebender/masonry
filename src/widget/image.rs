@@ -13,8 +13,8 @@ use vello::Scene;
 
 use crate::widget::{FillStrat, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Size,
-    StatusChange, Widget,
+    BoxConstraints, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Size,
+    StatusChange, TextEvent, Widget,
 };
 
 // TODO - Resolve name collision between masonry::Image and peniko::Image
@@ -50,7 +50,7 @@ impl Image {
     }
 }
 
-impl<'a, 'b> ImageMut<'a, 'b> {
+impl<'a> ImageMut<'a> {
     /// Modify the widget's fill strategy.
     #[inline]
     pub fn set_fill_mode(&mut self, newfil: FillStrat) {
@@ -67,7 +67,9 @@ impl<'a, 'b> ImageMut<'a, 'b> {
 }
 
 impl Widget for Image {
-    fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event) {}
+    fn on_pointer_event(&mut self, _ctx: &mut EventCtx, _event: &PointerEvent) {}
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx, _event: &TextEvent) {}
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 

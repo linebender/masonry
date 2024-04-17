@@ -92,7 +92,6 @@
 
 // TODO - Add logo
 
-pub use druid_shell as shell;
 #[doc(inline)]
 pub use kurbo;
 
@@ -100,19 +99,14 @@ pub use kurbo;
 mod util;
 
 mod action;
-mod app_delegate;
-mod app_launcher;
-mod app_root;
 mod bloom;
 mod box_constraints;
-pub mod command;
 mod contexts;
 mod event;
-pub mod ext_event;
-mod mouse;
 pub mod paint_scene_helpers;
 mod platform;
 pub mod promise;
+pub mod render_root;
 pub mod testing;
 pub mod text_helpers;
 pub mod theme;
@@ -123,19 +117,10 @@ pub mod debug_logger;
 pub mod debug_values;
 
 pub use action::Action;
-pub use app_delegate::{AppDelegate, DelegateCtx};
-pub use app_launcher::AppLauncher;
-pub use app_root::{AppRoot, WindowRoot};
 pub use box_constraints::BoxConstraints;
-pub use command::{Command, Notification, Selector, SingleUse, Target};
 pub use contexts::{EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, WidgetCtx};
-pub use druid_shell::Error as PlatformError;
-pub use event::{Event, InternalEvent, InternalLifeCycle, LifeCycle, StatusChange};
+pub use event::{InternalLifeCycle, LifeCycle, StatusChange, WindowTheme};
 pub use kurbo::{Affine, Insets, Point, Rect, Size, Vec2};
-pub use mouse::MouseEvent;
-pub use platform::{
-    MasonryWinHandler, WindowConfig, WindowDescription, WindowId, WindowSizePolicy,
-};
 pub use util::{AsAny, Handled};
 pub use vello::peniko::{Color, Gradient};
 pub use widget::{BackgroundBrush, Widget, WidgetId, WidgetPod, WidgetState};

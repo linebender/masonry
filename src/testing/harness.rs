@@ -3,35 +3,27 @@
 // details.
 
 //! Tools and infrastructure for testing widgets.
-#![warn(unused)]
 
-use std::collections::{HashMap, VecDeque};
 use std::num::NonZeroUsize;
 
-pub use druid_shell::RawMods;
-use druid_shell::{KeyEvent, Modifiers, MouseButton, MouseButtons};
 use image::io::Reader as ImageReader;
 use image::RgbaImage;
-use instant::Duration;
-use shell::text::Selection;
 use vello::util::RenderContext;
-use vello::{block_on_wgpu, RendererOptions, Scene};
+use vello::{block_on_wgpu, RendererOptions};
 use wgpu::{
     BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, ImageCopyBuffer,
     TextureDescriptor, TextureFormat, TextureUsages,
 };
+use winit::dpi::{PhysicalPosition, PhysicalSize};
+use winit::event::{Ime, MouseButton};
 
 use super::screenshots::get_image_diff;
 use super::snapshot_utils::get_cargo_workspace;
-use super::MockTimerQueue;
-use crate::action::{Action, ActionQueue};
-//use crate::ext_event::ExtEventHost;
-use crate::command::CommandQueue;
-use crate::contexts::GlobalPassCtx;
-use crate::debug_logger::DebugLogger;
-use crate::ext_event::ExtEventQueue;
-use crate::widget::{StoreInWidgetMut, WidgetMut, WidgetRef};
-use crate::*;
+use crate::action::Action;
+use crate::event::{PointerEvent, PointerState, TextEvent, WindowEvent};
+use crate::render_root::{RenderRoot, RenderRootSignal, WindowSizePolicy};
+use crate::widget::{WidgetMut, WidgetRef};
+use crate::{Color, Handled, Point, Size, Vec2, Widget, WidgetId};
 
 // TODO - Get shorter names
 // TODO - Make them associated consts
@@ -126,9 +118,9 @@ pub const HARNESS_DEFAULT_BACKGROUND_COLOR: Color = Color::rgb8(0x29, 0x29, 0x29
 /// # simple_button();
 /// ```
 pub struct TestHarness {
-    mock_app: MockAppRoot,
-    mouse_state: MouseEvent,
-    window_size: Size,
+    render_root: RenderRoot,
+    mouse_state: PointerState,
+    window_size: PhysicalSize<u32>,
     background_color: Color,
 }
 
@@ -154,79 +146,69 @@ macro_rules! assert_render_snapshot {
     };
 }
 
-// TODO - merge
-struct MockAppRoot {
-    window: WindowRoot,
-    command_queue: CommandQueue,
-    action_queue: ActionQueue,
-    debug_logger: DebugLogger,
-}
-
 impl TestHarness {
     /// Builds harness with given root widget.
     ///
     /// Window size will be [`HARNESS_DEFAULT_SIZE`].
     /// Background color will be [`HARNESS_DEFAULT_BACKGROUND_COLOR`].
-    pub fn create(root: impl Widget) -> Self {
-        Self::create_with(root, HARNESS_DEFAULT_SIZE, HARNESS_DEFAULT_BACKGROUND_COLOR)
+    pub fn create(root_widget: impl Widget) -> Self {
+        Self::create_with(
+            root_widget,
+            HARNESS_DEFAULT_SIZE,
+            HARNESS_DEFAULT_BACKGROUND_COLOR,
+        )
     }
 
     // TODO - Remove
     /// Builds harness with given root widget and window size.
-    pub fn create_with_size(root: impl Widget, window_size: Size) -> Self {
-        Self::create_with(root, window_size, HARNESS_DEFAULT_BACKGROUND_COLOR)
+    pub fn create_with_size(root_widget: impl Widget, window_size: Size) -> Self {
+        Self::create_with(root_widget, window_size, HARNESS_DEFAULT_BACKGROUND_COLOR)
     }
 
     /// Builds harness with given root widget, canvas size and background color.
-    pub fn create_with(root: impl Widget, window_size: Size, background_color: Color) -> Self {
-        //let ext_host = ExtEventHost::default();
-        //let ext_handle = ext_host.make_sink();
+    pub fn create_with(
+        root_widget: impl Widget,
+        window_size: Size,
+        background_color: Color,
+    ) -> Self {
+        let mouse_state = PointerState::empty();
+        let window_size = PhysicalSize::new(window_size.width as _, window_size.height as _);
 
-        // FIXME
-        let event_queue = ExtEventQueue::new();
+        {
+            use tracing_subscriber::prelude::*;
+            let filter_layer = tracing_subscriber::filter::LevelFilter::TRACE;
+            let fmt_layer = tracing_subscriber::fmt::layer()
+                // Display target (eg "my_crate::some_mod::submod") with logs
+                .with_target(true);
 
-        let window = WindowRoot::new(
-            WindowId::next(),
-            Default::default(),
-            event_queue.make_sink(),
-            Box::new(root),
-            "Masonry test app".into(),
-            false,
-            WindowSizePolicy::User,
-            Some(MockTimerQueue::new()),
-        );
-
-        let mouse_state = MouseEvent {
-            pos: Point::ZERO,
-            window_pos: Point::ZERO,
-            buttons: MouseButtons::default(),
-            mods: Modifiers::default(),
-            count: 0,
-            focus: false,
-            button: MouseButton::None,
-            wheel_delta: Vec2::ZERO,
-        };
+            tracing_subscriber::registry()
+                .with(filter_layer)
+                .with(fmt_layer)
+                .init();
+        }
 
         let mut harness = TestHarness {
-            mock_app: MockAppRoot {
-                window,
-                command_queue: VecDeque::new(),
-                action_queue: VecDeque::new(),
-                debug_logger: DebugLogger::new(false),
-            },
+            render_root: RenderRoot::new(root_widget, WindowSizePolicy::User),
             mouse_state,
             window_size,
             background_color,
         };
-
-        // verify that all widgets are marked as having children_changed
-        // (this should always be true for a new widget)
-        harness.inspect_widgets(|widget| assert!(widget.state().children_changed));
-
-        harness.process_event(Event::WindowConnected);
-        harness.process_event(Event::WindowSize(window_size));
+        harness.process_window_event(WindowEvent::Resize(window_size));
 
         harness
+    }
+
+    // FIXME - The docs for these three functions are copy-pasted. Rewrite them.
+
+    /// Send an event to the widget.
+    ///
+    /// If this event triggers lifecycle events, they will also be dispatched,
+    /// as will any resulting commands. Commands created as a result of this event
+    /// will also be dispatched.
+    pub fn process_window_event(&mut self, event: WindowEvent) -> Handled {
+        let handled = self.render_root.handle_window_event(event);
+        self.process_state_after_event();
+        handled
     }
 
     /// Send an event to the widget.
@@ -234,26 +216,26 @@ impl TestHarness {
     /// If this event triggers lifecycle events, they will also be dispatched,
     /// as will any resulting commands. Commands created as a result of this event
     /// will also be dispatched.
-    pub fn process_event(&mut self, event: Event) {
-        self.mock_app.event(event);
-
+    pub fn process_pointer_event(&mut self, event: PointerEvent) -> Handled {
+        let handled = self.render_root.handle_pointer_event(event);
         self.process_state_after_event();
+        handled
+    }
+
+    /// Send an event to the widget.
+    ///
+    /// If this event triggers lifecycle events, they will also be dispatched,
+    /// as will any resulting commands. Commands created as a result of this event
+    /// will also be dispatched.
+    pub fn process_text_event(&mut self, event: TextEvent) -> Handled {
+        let handled = self.render_root.handle_text_event(event);
+        self.process_state_after_event();
+        handled
     }
 
     fn process_state_after_event(&mut self) {
-        loop {
-            let cmd = self.mock_app.command_queue.pop_front();
-            match cmd {
-                Some(cmd) => self
-                    .mock_app
-                    .event(Event::Internal(InternalEvent::TargetedCommand(cmd))),
-                None => break,
-            };
-        }
-
-        // TODO - this might be too coarse
         if self.root_widget().state().needs_layout {
-            self.mock_app.layout();
+            self.render_root.root_layout();
         }
     }
 
@@ -281,14 +263,10 @@ impl TestHarness {
         )
         .expect("Got non-Send/Sync error from creating renderer");
 
-        let mut scene = Scene::new();
-        self.mock_app.paint_region(&mut scene);
+        let scene = self.render_root.redraw();
 
         // TODO - fix window_size
-        let (width, height) = (
-            self.window_size.width as u32,
-            self.window_size.height as u32,
-        );
+        let (width, height) = (self.window_size.width, self.window_size.height);
         let render_params = vello::RenderParams {
             // TODO - Parameterize
             base_color: self.background_color,
@@ -363,38 +341,33 @@ impl TestHarness {
 
     /// Move an internal mouse state, and send a MouseMove event to the window.
     pub fn mouse_move(&mut self, pos: impl Into<Point>) {
+        // FIXME - Account for scaling
         let pos = pos.into();
-        // FIXME - not actually the same
-        self.mouse_state.pos = pos;
-        self.mouse_state.window_pos = pos;
-        self.mouse_state.button = MouseButton::None;
+        let pos = PhysicalPosition::new(pos.x, pos.y);
+        self.mouse_state.position = pos;
 
-        self.process_event(Event::MouseMove(self.mouse_state.clone()));
+        self.process_pointer_event(PointerEvent::PointerMove(self.mouse_state.clone()));
     }
 
     /// Send a MouseDown event to the window.
     pub fn mouse_button_press(&mut self, button: MouseButton) {
         self.mouse_state.buttons.insert(button);
-        self.mouse_state.button = button;
-
-        self.process_event(Event::MouseDown(self.mouse_state.clone()));
+        self.process_pointer_event(PointerEvent::PointerDown(button, self.mouse_state.clone()));
     }
 
     /// Send a MouseUp event to the window.
     pub fn mouse_button_release(&mut self, button: MouseButton) {
-        self.mouse_state.buttons.remove(button);
-        self.mouse_state.button = button;
-
-        self.process_event(Event::MouseUp(self.mouse_state.clone()));
+        self.mouse_state.buttons.remove(&button);
+        self.process_pointer_event(PointerEvent::PointerUp(button, self.mouse_state.clone()));
     }
 
     /// Send a Wheel event to the window
     pub fn mouse_wheel(&mut self, wheel_delta: Vec2) {
-        self.mouse_state.button = MouseButton::None;
-        self.mouse_state.wheel_delta = wheel_delta;
-
-        self.process_event(Event::Wheel(self.mouse_state.clone()));
-        self.mouse_state.wheel_delta = Vec2::ZERO;
+        let pixel_delta = PhysicalPosition::new(wheel_delta.x, wheel_delta.y);
+        self.process_pointer_event(PointerEvent::MouseWheel(
+            pixel_delta,
+            self.mouse_state.clone(),
+        ));
     }
 
     /// Send events that lead to a given widget being clicked.
@@ -420,51 +393,17 @@ impl TestHarness {
     }
 
     // TODO - Handle complicated IME
-
-    /// Simulate typing the given text.
-    ///
-    /// For every character in the input string (more specifically,
-    /// for every Unicode Scalar Value), this sends a KeyDown and a
-    /// KeyUp event to the window.
-    ///
-    /// Obviously this works better with ASCII text.
-    ///
-    /// **(Note: IME mocking is a future feature)**
+    // TODO - Mock Winit keyboard events
     pub fn keyboard_type_chars(&mut self, text: &str) {
         // For each character
         for c in text.split("").filter(|s| !s.is_empty()) {
-            let event = KeyEvent::for_test(RawMods::None, c);
-
-            if self.mock_app.event(Event::KeyDown(event.clone())) == Handled::No {
-                if let Some(mut input_handler) = self.mock_app.window.get_focused_ime_handler(true)
-                {
-                    // This is copy-pasted from druid-shell's simulate_input function
-                    let selection = input_handler.selection();
-                    input_handler.replace_range(selection.range(), c);
-                    let new_caret_index = selection.min() + c.len();
-                    input_handler.set_selection(Selection::caret(new_caret_index));
-
-                    let modified_widget = self.mock_app.window.release_focused_ime_handler();
-
-                    if let Some(widget_id) = modified_widget {
-                        let event = Event::Internal(InternalEvent::RouteImeStateChange(widget_id));
-                        self.mock_app.event(event);
-                    }
-                }
-            }
-            self.mock_app.event(Event::KeyUp(event.clone()));
+            let event = TextEvent::Ime(Ime::Commit(c.to_string()));
+            self.render_root.handle_text_event(event);
         }
         self.process_state_after_event();
     }
 
-    #[doc(alias = "send_command")]
-    /// Send a command to a target.
-    pub fn submit_command(&mut self, command: impl Into<Command>) {
-        let command = command.into().default_to(self.mock_app.window.id.into());
-        let event = Event::Internal(InternalEvent::TargetedCommand(command));
-        self.process_event(event);
-    }
-
+    #[cfg(FALSE)]
     /// Simulate the passage of time.
     ///
     /// If you create any timer in a widget, this method is the only way to trigger
@@ -488,19 +427,9 @@ impl TestHarness {
 
     // --- Getters ---
 
-    /// Return the mocked window.
-    pub fn window(&self) -> &WindowRoot {
-        &self.mock_app.window
-    }
-
-    /// Return the mocked window.
-    pub fn window_mut(&mut self) -> &mut WindowRoot {
-        &mut self.mock_app.window
-    }
-
     /// Return the root widget.
     pub fn root_widget(&self) -> WidgetRef<'_, dyn Widget> {
-        self.mock_app.window.root.as_dyn()
+        self.render_root.root.as_dyn()
     }
 
     /// Return the widget with the given id.
@@ -509,21 +438,21 @@ impl TestHarness {
     ///
     /// Panics if no Widget with this id can be found.
     pub fn get_widget(&self, id: WidgetId) -> WidgetRef<'_, dyn Widget> {
-        self.mock_app
-            .window
+        self.root_widget()
             .find_widget_by_id(id)
             .expect("could not find widget")
     }
 
     /// Try to return the widget with the given id.
     pub fn try_get_widget(&self, id: WidgetId) -> Option<WidgetRef<'_, dyn Widget>> {
-        self.mock_app.window.find_widget_by_id(id)
+        self.root_widget().find_widget_by_id(id)
     }
 
     // TODO - link to focus documentation.
     /// Return the widget that receives keyboard events.
     pub fn focused_widget(&self) -> Option<WidgetRef<'_, dyn Widget>> {
-        self.mock_app.window.focused_widget()
+        self.root_widget()
+            .find_widget_by_id(self.render_root.state.focused_widget?)
     }
 
     /// Call the provided visitor on every widget in the widget tree.
@@ -538,7 +467,7 @@ impl TestHarness {
             }
         }
 
-        inspect(self.mock_app.window.root.as_dyn(), &f);
+        inspect(self.root_widget(), &f);
     }
 
     /// Get a [`WidgetMut`] to the root widget.
@@ -546,54 +475,10 @@ impl TestHarness {
     /// Because of how WidgetMut works, it can only be passed to a user-provided callback.
     pub fn edit_root_widget<R>(
         &mut self,
-        f: impl FnOnce(WidgetMut<'_, '_, Box<dyn Widget>>) -> R,
+        f: impl FnOnce(WidgetMut<'_, Box<dyn Widget>>) -> R,
     ) -> R {
-        // TODO - Move to MockAppRoot?
-        let window = &mut self.mock_app.window;
-        let mut fake_widget_state;
-        let mut timers = HashMap::new();
-        let res = {
-            let mut global_state = GlobalPassCtx::new(
-                window.ext_event_sink.clone(),
-                &mut self.mock_app.debug_logger,
-                &mut self.mock_app.command_queue,
-                &mut self.mock_app.action_queue,
-                &mut timers,
-                window.mock_timer_queue.as_mut(),
-                &window.handle,
-                window.id,
-                window.focus,
-            );
-            fake_widget_state = window.root.state.clone();
-
-            let root_widget = WidgetMut {
-                inner: Box::<dyn Widget>::from_widget_and_ctx(
-                    &mut window.root.inner,
-                    WidgetCtx {
-                        global_state: &mut global_state,
-                        widget_state: &mut window.root.state,
-                    },
-                ),
-                parent_widget_state: &mut fake_widget_state,
-            };
-
-            f(root_widget)
-        };
-
-        // Timer creation should use mock_timer_queue instead
-        assert!(timers.is_empty());
-
-        // TODO - handle cursor and validation
-
-        window.post_event_processing(
-            &mut fake_widget_state,
-            &mut self.mock_app.debug_logger,
-            &mut self.mock_app.command_queue,
-            &mut self.mock_app.action_queue,
-            false,
-        );
+        let res = self.render_root.edit_root_widget(f);
         self.process_state_after_event();
-
         res
     }
 
@@ -601,8 +486,14 @@ impl TestHarness {
     ///
     /// Note: Actions are still a WIP feature.
     pub fn pop_action(&mut self) -> Option<(Action, WidgetId)> {
-        let (action, widget_id, _) = self.mock_app.action_queue.pop_front()?;
-        Some((action, widget_id))
+        let signal = self
+            .render_root
+            .pop_signal_matching(|signal| matches!(signal, RenderRootSignal::Action(..)));
+        match signal {
+            Some(RenderRootSignal::Action(action, id)) => Some((action, id)),
+            Some(_) => unreachable!(),
+            _ => None,
+        }
     }
 
     // --- Screenshots ---
@@ -667,57 +558,9 @@ impl TestHarness {
 
     // --- Debug logger ---
 
-    // TODO - remove, see ROADMAP.md
-    #[allow(missing_docs)]
-    pub fn push_log(&mut self, message: &str) {
-        self.mock_app
-            .debug_logger
-            .update_widget_state(self.mock_app.window.root.as_dyn());
-        self.mock_app.debug_logger.push_log(false, message);
-    }
-
     // ex: harness.write_debug_logs("test_log.json");
     #[allow(missing_docs)]
     pub fn write_debug_logs(&mut self, path: &str) {
-        self.mock_app.debug_logger.write_to_file(path);
-    }
-}
-
-#[allow(dead_code)]
-impl MockAppRoot {
-    fn event(&mut self, event: Event) -> Handled {
-        self.window.event(
-            event,
-            &mut self.debug_logger,
-            &mut self.command_queue,
-            &mut self.action_queue,
-        )
-    }
-
-    fn lifecycle(&mut self, event: LifeCycle) {
-        self.window.lifecycle(
-            &event,
-            &mut self.debug_logger,
-            &mut self.command_queue,
-            &mut self.action_queue,
-            false,
-        );
-    }
-
-    fn layout(&mut self) {
-        self.window.layout(
-            &mut self.debug_logger,
-            &mut self.command_queue,
-            &mut self.action_queue,
-        );
-    }
-
-    fn paint_region(&mut self, scene: &mut Scene) {
-        self.window.do_paint(
-            scene,
-            &mut self.debug_logger,
-            &mut self.command_queue,
-            &mut self.action_queue,
-        );
+        self.render_root.state.debug_logger.write_to_file(path);
     }
 }

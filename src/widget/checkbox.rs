@@ -14,8 +14,8 @@ use crate::kurbo::{BezPath, Cap, Join, Size};
 use crate::paint_scene_helpers::{fill_lin_gradient, stroke, UnitPoint};
 use crate::widget::{Label, WidgetMut, WidgetRef};
 use crate::{
-    theme, ArcStr, BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    StatusChange, Widget, WidgetPod,
+    theme, ArcStr, BoxConstraints, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    PointerEvent, StatusChange, TextEvent, Widget, WidgetPod,
 };
 
 /// A checkbox that can be toggled.
@@ -44,7 +44,7 @@ impl Checkbox {
     }
 }
 
-impl<'a, 'b> CheckboxMut<'a, 'b> {
+impl<'a> CheckboxMut<'a> {
     pub fn set_checked(&mut self, checked: bool) {
         self.widget.checked = checked;
         self.ctx.request_paint();
@@ -55,22 +55,22 @@ impl<'a, 'b> CheckboxMut<'a, 'b> {
         self.label_mut().set_text(new_text.into());
     }
 
-    pub fn label_mut(&mut self) -> WidgetMut<'_, 'b, Label> {
+    pub fn label_mut(&mut self) -> WidgetMut<'_, Label> {
         self.ctx.get_mut(&mut self.widget.label)
     }
 }
 
 impl Widget for Checkbox {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
+    fn on_pointer_event(&mut self, ctx: &mut EventCtx, event: &PointerEvent) {
         match event {
-            Event::MouseDown(_) => {
+            PointerEvent::PointerDown(_, _) => {
                 if !ctx.is_disabled() {
                     ctx.set_active(true);
                     ctx.request_paint();
                     trace!("Checkbox {:?} pressed", ctx.widget_id());
                 }
             }
-            Event::MouseUp(_) => {
+            PointerEvent::PointerUp(_, _) => {
                 if ctx.is_active() && !ctx.is_disabled() {
                     if ctx.is_hot() {
                         self.checked = !self.checked;
@@ -84,6 +84,8 @@ impl Widget for Checkbox {
             _ => (),
         }
     }
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx, _event: &TextEvent) {}
 
     fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, _event: &StatusChange) {
         ctx.request_paint();

@@ -6,7 +6,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use druid_shell::Cursor;
+use winit::window::CursorIcon;
 
 use crate::bloom::Bloom;
 use crate::kurbo::{Insets, Point, Rect, Size};
@@ -83,6 +83,7 @@ pub struct WidgetState {
     pub(crate) is_explicitly_disabled_new: bool,
 
     pub(crate) needs_layout: bool,
+    pub(crate) needs_paint: bool,
 
     /// Because of some scrolling or something, `parent_window_origin` needs to be updated.
     pub(crate) needs_window_origin: bool,
@@ -101,7 +102,8 @@ pub struct WidgetState {
     pub(crate) cursor_change: CursorChange,
     /// The result of merging up children cursors. This gets cleared when merging state up (unlike
     /// cursor_change, which is persistent).
-    pub(crate) cursor: Option<Cursor>,
+    // TODO - Remove and handle in WidgetRoot instead
+    pub(crate) cursor: Option<CursorIcon>,
 
     pub(crate) text_registrations: Vec<TextFieldRegistration>,
 
@@ -160,6 +162,7 @@ impl WidgetState {
             baseline_offset: 0.0,
             is_hot: false,
             needs_layout: false,
+            needs_paint: false,
             needs_window_origin: false,
             is_active: false,
             has_active: false,
@@ -211,6 +214,7 @@ impl WidgetState {
     /// This method is idempotent and can be called multiple times.
     pub(crate) fn merge_up(&mut self, child_state: &mut WidgetState) {
         self.needs_layout |= child_state.needs_layout;
+        self.needs_paint |= child_state.needs_paint;
         self.needs_window_origin |= child_state.needs_window_origin;
         self.request_anim |= child_state.request_anim;
         self.children_disabled_changed |= child_state.children_disabled_changed;
@@ -228,14 +232,14 @@ impl WidgetState {
         // things will be recalculated just from `cursor_change`.
         let child_cursor = child_state.take_cursor();
         if let CursorChange::Override(cursor) = &self.cursor_change {
-            self.cursor = Some(cursor.clone());
+            self.cursor = Some(*cursor);
         } else if child_state.has_active || child_state.is_hot {
             self.cursor = child_cursor;
         }
 
         if self.cursor.is_none() {
             if let CursorChange::Set(cursor) = &self.cursor_change {
-                self.cursor = Some(cursor.clone());
+                self.cursor = Some(*cursor);
             }
         }
     }
@@ -243,7 +247,7 @@ impl WidgetState {
     /// Because of how cursor merge logic works, we need to handle the leaf case;
     /// in that case there will be nothing in the `cursor` field (as merge_up
     /// is never called) and so we need to also check the `cursor_change` field.
-    fn take_cursor(&mut self) -> Option<Cursor> {
+    fn take_cursor(&mut self) -> Option<CursorIcon> {
         self.cursor.take().or_else(|| self.cursor_change.cursor())
     }
 

@@ -14,8 +14,8 @@ use vello::Scene;
 use crate::kurbo::Line;
 use crate::widget::WidgetRef;
 use crate::{
-    theme, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Size, StatusChange, Vec2, Widget,
+    theme, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    PointerEvent, Size, StatusChange, TextEvent, Vec2, Widget,
 };
 
 // TODO - Set color
@@ -49,7 +49,7 @@ impl Spinner {
     }
 }
 
-impl SpinnerMut<'_, '_> {
+impl SpinnerMut<'_> {
     /// Set the spinner's color.
     ///
     /// The argument can be either a `Color` or a [`Key<Color>`].
@@ -71,23 +71,27 @@ impl Default for Spinner {
 }
 
 impl Widget for Spinner {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
-        if let Event::AnimFrame(interval) = event {
-            self.t += (*interval as f64) * 1e-9;
-            if self.t >= 1.0 {
-                self.t = 0.0;
-            }
-            ctx.request_anim_frame();
-            ctx.request_paint();
-        }
-    }
+    fn on_pointer_event(&mut self, _ctx: &mut EventCtx, _event: &PointerEvent) {}
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx, _event: &TextEvent) {}
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {
-        if let LifeCycle::WidgetAdded = event {
-            ctx.request_anim_frame();
-            ctx.request_paint();
+        match event {
+            LifeCycle::WidgetAdded => {
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            }
+            LifeCycle::AnimFrame(interval) => {
+                self.t += (*interval as f64) * 1e-9;
+                if self.t >= 1.0 {
+                    self.t = 0.0;
+                }
+                ctx.request_anim_frame();
+                ctx.request_paint();
+            }
+            _ => (),
         }
     }
 

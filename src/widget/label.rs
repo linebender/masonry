@@ -15,8 +15,8 @@ use vello::Scene;
 
 use crate::widget::WidgetRef;
 use crate::{
-    ArcStr, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Size, StatusChange, Widget,
+    ArcStr, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    PointerEvent, Size, StatusChange, TextEvent, Widget,
 };
 
 // added padding between the edges of the widget and the text.
@@ -143,7 +143,7 @@ impl Label {
     }
 }
 
-impl LabelMut<'_, '_> {
+impl LabelMut<'_> {
     /// Set the text.
     pub fn set_text(&mut self, new_text: impl Into<ArcStr>) {
         self.widget.current_text = new_text.into();
@@ -185,7 +185,9 @@ impl LabelMut<'_, '_> {
 // --- TRAIT IMPLS ---
 
 impl Widget for Label {
-    fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event) {}
+    fn on_pointer_event(&mut self, _ctx: &mut EventCtx, _event: &PointerEvent) {}
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx, _event: &TextEvent) {}
 
     fn on_status_change(&mut self, _ctx: &mut LifeCycleCtx, _event: &StatusChange) {}
 

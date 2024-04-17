@@ -9,13 +9,11 @@ use tracing::{trace, trace_span, Span};
 use vello::Scene;
 
 use crate::action::Action;
-#[allow(unused)]
-use crate::paint_scene_helpers::UnitPoint;
-use crate::paint_scene_helpers::{fill_lin_gradient, stroke};
+use crate::paint_scene_helpers::{fill_lin_gradient, stroke, UnitPoint};
 use crate::widget::{Label, WidgetMut, WidgetPod, WidgetRef};
 use crate::{
-    theme, ArcStr, BoxConstraints, Event, EventCtx, Insets, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, Size, StatusChange, Widget,
+    theme, ArcStr, BoxConstraints, EventCtx, Insets, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    PointerEvent, Size, StatusChange, TextEvent, Widget,
 };
 
 // the minimum padding added to a button.
@@ -64,28 +62,28 @@ impl Button {
     }
 }
 
-impl<'a, 'b> ButtonMut<'a, 'b> {
+impl<'a> ButtonMut<'a> {
     /// Set the text.
     pub fn set_text(&mut self, new_text: impl Into<ArcStr>) {
         self.label_mut().set_text(new_text.into());
     }
 
-    pub fn label_mut(&mut self) -> WidgetMut<'_, 'b, Label> {
+    pub fn label_mut(&mut self) -> WidgetMut<'_, Label> {
         self.ctx.get_mut(&mut self.widget.label)
     }
 }
 
 impl Widget for Button {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
+    fn on_pointer_event(&mut self, ctx: &mut EventCtx, event: &PointerEvent) {
         match event {
-            Event::MouseDown(_) => {
+            PointerEvent::PointerDown(_, _) => {
                 if !ctx.is_disabled() {
                     ctx.set_active(true);
                     ctx.request_paint();
                     trace!("Button {:?} pressed", ctx.widget_id());
                 }
             }
-            Event::MouseUp(_) => {
+            PointerEvent::PointerUp(_, _) => {
                 if ctx.is_active() && !ctx.is_disabled() {
                     ctx.submit_action(Action::ButtonPressed);
                     ctx.request_paint();
@@ -95,6 +93,11 @@ impl Widget for Button {
             }
             _ => (),
         }
+        self.label.on_pointer_event(ctx, event);
+    }
+
+    fn on_text_event(&mut self, ctx: &mut EventCtx, event: &TextEvent) {
+        self.label.on_text_event(ctx, event);
     }
 
     fn on_status_change(&mut self, ctx: &mut LifeCycleCtx, _event: &StatusChange) {

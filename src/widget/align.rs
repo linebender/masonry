@@ -16,8 +16,8 @@ use vello::Scene;
 use crate::paint_scene_helpers::UnitPoint;
 use crate::widget::{WidgetPod, WidgetRef};
 use crate::{
-    BoxConstraints, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Rect, Size,
-    StatusChange, Widget,
+    BoxConstraints, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, PointerEvent, Rect,
+    Size, StatusChange, TextEvent, Widget,
 };
 
 // TODO - Have child widget type as generic argument
@@ -82,8 +82,12 @@ impl Align {
 }
 
 impl Widget for Align {
-    fn on_event(&mut self, ctx: &mut EventCtx, event: &Event) {
-        self.child.on_event(ctx, event)
+    fn on_pointer_event(&mut self, ctx: &mut EventCtx, event: &PointerEvent) {
+        self.child.on_pointer_event(ctx, event)
+    }
+
+    fn on_text_event(&mut self, ctx: &mut EventCtx, event: &TextEvent) {
+        self.child.on_text_event(ctx, event)
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle) {
