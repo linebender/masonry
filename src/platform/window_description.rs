@@ -23,6 +23,7 @@ pub struct WindowId(u64);
 ///     .window_size((400.0, 400.0));
 /// ```
 pub struct WindowDescription {
+    #[allow(dead_code)]
     pub(crate) root: Box<dyn Widget>,
     pub(crate) title: ArcStr,
     pub(crate) config: WindowConfig,
@@ -33,18 +34,7 @@ pub struct WindowDescription {
     pub id: WindowId,
 }
 
-/// Defines how a windows size should be determined
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
-pub enum WindowSizePolicy {
-    /// Use the content of the window to determine the size.
-    ///
-    /// If you use this option, your root widget will be passed infinite constraints;
-    /// you are responsible for ensuring that your content picks an appropriate size.
-    Content,
-    /// Use the provided window size.
-    #[default]
-    User,
-}
+pub use crate::render_root::WindowSizePolicy;
 
 /// Window configuration that can be applied to a [WindowBuilder], or to an existing [WindowHandle].
 ///

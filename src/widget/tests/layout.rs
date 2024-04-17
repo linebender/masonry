@@ -4,8 +4,6 @@
 
 //! Tests related to layout.
 
-#![allow(unused_imports)]
-
 use crate::kurbo::{Insets, Size};
 use crate::testing::{widget_ids, ModularWidget, TestHarness, TestWidgetExt};
 use crate::widget::{Flex, SizedBox};

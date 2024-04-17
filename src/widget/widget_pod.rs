@@ -2,19 +2,19 @@
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
 
-use std::collections::VecDeque;
-
 use tracing::{info_span, trace, warn};
 use vello::Scene;
+use winit::dpi::PhysicalPosition;
 
-use crate::contexts::GlobalPassCtx;
+use crate::event::{PointerEvent, TextEvent};
 use crate::kurbo::{Affine, Insets, Point, Rect, Shape, Size};
 use crate::paint_scene_helpers::stroke;
+use crate::render_root::RenderRootState;
 use crate::theme::get_debug_color;
 use crate::widget::{FocusChange, WidgetRef, WidgetState};
 use crate::{
-    BoxConstraints, Event, EventCtx, InternalEvent, InternalLifeCycle, LayoutCtx, LifeCycle,
-    LifeCycleCtx, Notification, PaintCtx, StatusChange, Target, Widget, WidgetId,
+    BoxConstraints, EventCtx, InternalLifeCycle, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    StatusChange, Widget, WidgetId,
 };
 
 // TODO - rewrite links in doc
@@ -231,13 +231,13 @@ impl<W: Widget> WidgetPod<W> {
     pub(crate) fn update_hot_state(
         inner: &mut W,
         inner_state: &mut WidgetState,
-        global_state: &mut GlobalPassCtx,
+        global_state: &mut RenderRootState,
         rect: Rect,
-        mouse_pos: Option<Point>,
+        mouse_pos: Option<PhysicalPosition<f64>>,
     ) -> bool {
         let had_hot = inner_state.is_hot;
         inner_state.is_hot = match mouse_pos {
-            Some(pos) => rect.winding(pos) != 0,
+            Some(pos) => rect.winding(Point::new(pos.x, pos.y)) != 0,
             None => false,
         };
         // FIXME - don't send event, update flags instead
@@ -343,15 +343,7 @@ impl<W: Widget> WidgetPod<W> {
     // focus is on it, its child or its parent.
     // - If a Widget has focus, then none of its parents is hidden
 
-    /// Propagate an event.
-    ///
-    /// Generally the [`event`] method of a container widget will call this
-    /// method on all its children. Here is where a great deal of the event
-    /// flow logic resides, particularly whether to continue propagating
-    /// the event.
-    ///
-    /// [`event`]: trait.Widget.html#tymethod.event
-    pub fn on_event(&mut self, parent_ctx: &mut EventCtx, event: &Event) {
+    pub fn on_pointer_event(&mut self, parent_ctx: &mut EventCtx, event: &PointerEvent) {
         let _span = self.inner.make_trace_span().entered();
         // TODO #11
         parent_ctx
@@ -361,7 +353,7 @@ impl<W: Widget> WidgetPod<W> {
 
         // TODO - explain this
         self.mark_as_visited();
-        self.check_initialized("on_event");
+        self.check_initialized("on_pointer_event");
 
         if parent_ctx.is_handled {
             parent_ctx.global_state.debug_logger.pop_span();
@@ -370,179 +362,42 @@ impl<W: Widget> WidgetPod<W> {
         }
 
         let had_active = self.state.has_active;
-        let rect = self.layout_rect();
+        let rect = self.layout_rect() + self.state.window_origin().to_vec2();
 
-        // If we need to replace either the event or its data.
-        let mut modified_event = None;
-
-        // TODO: factor as much logic as possible into monomorphic functions.
-        let call_inner = match event {
-            Event::Internal(internal) => match internal {
-                InternalEvent::MouseLeave => {
-                    let hot_changed = WidgetPod::update_hot_state(
-                        &mut self.inner,
-                        &mut self.state,
-                        parent_ctx.global_state,
-                        rect,
-                        None,
-                    );
-                    had_active || hot_changed
-                }
-                InternalEvent::TargetedCommand(cmd) => {
-                    match cmd.target() {
-                        Target::Widget(id) if id == self.id() => {
-                            modified_event = Some(Event::Command(cmd.clone()));
-                            true
-                        }
-                        Target::Widget(id) => {
-                            // Recurse when the target widget could be our descendant.
-                            // The bloom filter we're checking can return false positives.
-                            self.state.children.may_contain(&id)
-                        }
-                        Target::Global | Target::Window(_) => {
-                            modified_event = Some(Event::Command(cmd.clone()));
-                            true
-                        }
-                        _ => false,
-                    }
-                }
-                InternalEvent::RouteTimer(token, widget_id) => {
-                    if *widget_id == self.id() {
-                        modified_event = Some(Event::Timer(*token));
-                        true
-                    } else {
-                        self.state.children.may_contain(widget_id)
-                    }
-                }
-                InternalEvent::RoutePromiseResult(promise_result, widget_id) => {
-                    if *widget_id == self.id() {
-                        modified_event = Some(Event::PromiseResult(promise_result.clone()));
-                        true
-                    } else {
-                        self.state.children.may_contain(widget_id)
-                    }
-                }
-                InternalEvent::RouteImeStateChange(widget_id) => {
-                    if *widget_id == self.id() {
-                        modified_event = Some(Event::ImeStateChange);
-                        true
-                    } else {
-                        self.state.children.may_contain(widget_id)
-                    }
-                }
-            },
-            Event::WindowConnected | Event::WindowCloseRequested => true,
-            Event::WindowDisconnected => true,
-            Event::WindowSize(_) => {
-                self.state.needs_layout = true;
-                parent_ctx.is_root
-            }
-            Event::MouseDown(mouse_event) => {
-                WidgetPod::update_hot_state(
-                    &mut self.inner,
-                    &mut self.state,
-                    parent_ctx.global_state,
-                    rect,
-                    Some(mouse_event.pos),
-                );
-                if (had_active || self.state.is_hot) && !self.state.is_stashed {
-                    let mut mouse_event = mouse_event.clone();
-                    mouse_event.pos -= rect.origin().to_vec2();
-                    modified_event = Some(Event::MouseDown(mouse_event));
-                    true
-                } else {
-                    false
-                }
-            }
-            Event::MouseUp(mouse_event) => {
-                WidgetPod::update_hot_state(
-                    &mut self.inner,
-                    &mut self.state,
-                    parent_ctx.global_state,
-                    rect,
-                    Some(mouse_event.pos),
-                );
-                if (had_active || self.state.is_hot) && !self.state.is_stashed {
-                    let mut mouse_event = mouse_event.clone();
-                    mouse_event.pos -= rect.origin().to_vec2();
-                    modified_event = Some(Event::MouseUp(mouse_event));
-                    true
-                } else {
-                    false
-                }
-            }
-            Event::MouseMove(mouse_event) => {
-                let hot_changed = WidgetPod::update_hot_state(
-                    &mut self.inner,
-                    &mut self.state,
-                    parent_ctx.global_state,
-                    rect,
-                    Some(mouse_event.pos),
-                );
-                // MouseMove is recursed even if the widget is not active and not hot,
-                // but was hot previously. This is to allow the widget to respond to the movement,
-                // e.g. drag functionality where the widget wants to follow the mouse.
-                if (had_active || self.state.is_hot || hot_changed) && !self.state.is_stashed {
-                    let mut mouse_event = mouse_event.clone();
-                    mouse_event.pos -= rect.origin().to_vec2();
-                    modified_event = Some(Event::MouseMove(mouse_event));
-                    true
-                } else {
-                    false
-                }
-            }
-            Event::Wheel(mouse_event) => {
-                WidgetPod::update_hot_state(
-                    &mut self.inner,
-                    &mut self.state,
-                    parent_ctx.global_state,
-                    rect,
-                    Some(mouse_event.pos),
-                );
-                if (had_active || self.state.is_hot) && !self.state.is_stashed {
-                    let mut mouse_event = mouse_event.clone();
-                    mouse_event.pos -= rect.origin().to_vec2();
-                    modified_event = Some(Event::Wheel(mouse_event));
-                    true
-                } else {
-                    false
-                }
-            }
-            // TODO - switch anim frames to being about age / an absolute timestamp
-            // instead of time elapsed.
-            // (this will help in cases where we want to skip anim frames)
-            Event::AnimFrame(_) => {
-                let r = self.state.request_anim;
-                self.state.request_anim = false;
-                r
-            }
-            Event::KeyDown(_) => self.state.has_focus,
-            Event::KeyUp(_) => self.state.has_focus,
-            Event::Paste(_) => self.state.has_focus,
-            Event::Zoom(_) => had_active || self.state.is_hot,
-            Event::Timer(_) => false, // This event was targeted only to our parent
-            Event::ImeStateChange => true, // once delivered to the focus widget, recurse to the component?
-            Event::Command(_) => true,
-            Event::Notification(_) => false,
-            Event::PromiseResult(_) => false,
+        // TODO - This doesn't handle the case where multiple cursors
+        // are over the same widget
+        let hot_pos = match event {
+            PointerEvent::PointerDown(_, pointer_state) => Some(pointer_state.position),
+            PointerEvent::PointerUp(_, pointer_state) => Some(pointer_state.position),
+            PointerEvent::PointerMove(pointer_state) => Some(pointer_state.position),
+            PointerEvent::PointerEnter(pointer_state) => Some(pointer_state.position),
+            PointerEvent::PointerLeave(_) => None,
+            PointerEvent::MouseWheel(_, pointer_state) => Some(pointer_state.position),
+            PointerEvent::HoverFile(_, _) => None,
+            PointerEvent::DropFile(_, _) => None,
+            PointerEvent::HoverFileCancel(_) => None,
         };
+        let hot_changed = WidgetPod::update_hot_state(
+            &mut self.inner,
+            &mut self.state,
+            parent_ctx.global_state,
+            rect,
+            hot_pos,
+        );
+        let call_inner = (had_active || self.state.is_hot || hot_changed) && !self.state.is_stashed;
 
         if call_inner {
-            self.call_widget_method_with_checks("event", |widget_pod| {
+            self.call_widget_method_with_checks("on_pointer_event", |widget_pod| {
                 // widget_pod is a reborrow of `self`
-                let mut notifications = VecDeque::new();
                 let mut inner_ctx = EventCtx {
                     global_state: parent_ctx.global_state,
                     widget_state: &mut widget_pod.state,
-                    notifications: &mut notifications,
                     is_handled: false,
-                    is_root: false,
                     request_pan_to_child: None,
                 };
-                let inner_event = modified_event.as_ref().unwrap_or(event);
                 inner_ctx.widget_state.has_active = false;
 
-                widget_pod.inner.on_event(&mut inner_ctx, inner_event);
+                widget_pod.inner.on_pointer_event(&mut inner_ctx, event);
 
                 inner_ctx.widget_state.has_active |= inner_ctx.widget_state.is_active;
                 parent_ctx.is_handled |= inner_ctx.is_handled;
@@ -554,9 +409,65 @@ impl<W: Widget> WidgetPod<W> {
                         .with_origin(target_rect.origin() + widget_pod.state.origin.to_vec2());
                     parent_ctx.request_pan_to_child = Some(new_rect);
                 }
+            });
+        }
 
-                // we try to handle the notifications that occured below us in the tree
-                widget_pod.process_notifications(parent_ctx, &mut notifications);
+        // Always merge even if not needed, because merging is idempotent and gives us simpler code.
+        // Doing this conditionally only makes sense when there's a measurable performance boost.
+        parent_ctx.widget_state.merge_up(&mut self.state);
+
+        parent_ctx
+            .global_state
+            .debug_logger
+            .update_widget_state(self.as_dyn());
+        parent_ctx
+            .global_state
+            .debug_logger
+            .push_log(false, "updated state");
+
+        parent_ctx.global_state.debug_logger.pop_span();
+    }
+
+    pub fn on_text_event(&mut self, parent_ctx: &mut EventCtx, event: &TextEvent) {
+        let _span = self.inner.make_trace_span().entered();
+        // TODO #11
+        parent_ctx
+            .global_state
+            .debug_logger
+            .push_span(self.inner.short_type_name());
+
+        // TODO - explain this
+        self.mark_as_visited();
+        self.check_initialized("on_text_event");
+
+        if parent_ctx.is_handled {
+            parent_ctx.global_state.debug_logger.pop_span();
+            // If the event was already handled, we quit early.
+            return;
+        }
+
+        if self.state.has_focus {
+            self.call_widget_method_with_checks("on_text_event", |widget_pod| {
+                // widget_pod is a reborrow of `self`
+                let mut inner_ctx = EventCtx {
+                    global_state: parent_ctx.global_state,
+                    widget_state: &mut widget_pod.state,
+                    is_handled: false,
+                    request_pan_to_child: None,
+                };
+
+                widget_pod.inner.on_text_event(&mut inner_ctx, event);
+
+                inner_ctx.widget_state.has_active |= inner_ctx.widget_state.is_active;
+                parent_ctx.is_handled |= inner_ctx.is_handled;
+
+                // TODO - there's some dubious logic here
+                if let Some(target_rect) = inner_ctx.request_pan_to_child {
+                    widget_pod.pan_to_child(parent_ctx, target_rect);
+                    let new_rect = target_rect
+                        .with_origin(target_rect.origin() + widget_pod.state.origin.to_vec2());
+                    parent_ctx.request_pan_to_child = Some(new_rect);
+                }
             });
         }
 
@@ -584,48 +495,6 @@ impl<W: Widget> WidgetPod<W> {
         let event = LifeCycle::RequestPanToChild(rect);
 
         self.inner.lifecycle(&mut inner_ctx, &event);
-    }
-
-    /// Send notifications originating from this widget's children to this
-    /// widget.
-    ///
-    /// Notifications that are unhandled will be added to the notification
-    /// list for the parent's `EventCtx`, to be retried there.
-    fn process_notifications(
-        &mut self,
-        parent_ctx: &mut EventCtx,
-        notifications: &mut VecDeque<Notification>,
-    ) {
-        let self_id = self.id();
-
-        for notification in notifications.drain(..) {
-            // skip notifications that were submitted by our child
-            if notification.source() != self_id {
-                self.call_widget_method_with_checks("event", |widget_pod| {
-                    let mut inner_ctx = EventCtx {
-                        global_state: parent_ctx.global_state,
-                        notifications: parent_ctx.notifications,
-                        widget_state: &mut widget_pod.state,
-                        is_handled: false,
-                        is_root: false,
-                        request_pan_to_child: None,
-                    };
-
-                    let event = Event::Notification(notification);
-                    widget_pod.inner.on_event(&mut inner_ctx, &event);
-                    if inner_ctx.is_handled {
-                        inner_ctx.is_handled = false;
-                    } else if let Event::Notification(notification) = event {
-                        // we will try again with the next parent
-                        inner_ctx.notifications.push_back(notification);
-                    } else {
-                        unreachable!()
-                    }
-                });
-            } else {
-                parent_ctx.notifications.push_back(notification);
-            }
-        }
     }
 
     // --- LIFECYCLE ---
@@ -748,8 +617,10 @@ impl<W: Widget> WidgetPod<W> {
                     self.inner.short_type_name()
                 );
 
-                self.state.update_focus_chain = true;
                 self.state.is_new = false;
+                self.state.update_focus_chain = true;
+                self.state.needs_layout = true;
+                self.state.needs_paint = true;
 
                 true
             }
@@ -762,6 +633,7 @@ impl<W: Widget> WidgetPod<W> {
                 );
                 return;
             }
+            LifeCycle::AnimFrame(_) => true,
             LifeCycle::DisabledChanged(ancestors_disabled) => {
                 self.state.update_focus_chain = true;
 
@@ -778,7 +650,7 @@ impl<W: Widget> WidgetPod<W> {
             LifeCycle::BuildFocusChain => {
                 if self.state.update_focus_chain {
                     // Replace has_focus to check if the value changed in the meantime
-                    let is_focused = parent_ctx.global_state.focus_widget == Some(self.state.id);
+                    let is_focused = parent_ctx.global_state.focused_widget == Some(self.state.id);
                     self.state.has_focus = is_focused;
 
                     self.state.focus_chain.clear();
@@ -916,9 +788,6 @@ impl<W: Widget> WidgetPod<W> {
             .mouse_pos
             .map(|pos| pos - self.layout_rect().origin().to_vec2());
 
-        // TODO - remove ?
-        let _prev_size = self.state.size;
-
         self.state.local_paint_rect = Rect::ZERO;
 
         let new_size = self.call_widget_method_with_checks("layout", |widget_pod| {
@@ -1029,13 +898,10 @@ impl<W: Widget> WidgetPod<W> {
         self.mark_as_visited();
         self.check_initialized("paint");
 
-        // TODO
-        let needs_paint = true;
-
-        if needs_paint {
+        if self.state.needs_paint {
             self.call_widget_method_with_checks("paint", |widget_pod| {
                 // TODO - Handle invalidation regions
-                let mut child_ctx = PaintCtx {
+                let mut inner_ctx = PaintCtx {
                     global_state: parent_ctx.global_state,
                     widget_state: &widget_pod.state,
                     depth: parent_ctx.depth + 1,
@@ -1046,7 +912,7 @@ impl<W: Widget> WidgetPod<W> {
                 widget_pod.fragment.reset();
                 widget_pod
                     .inner
-                    .paint(&mut child_ctx, &mut widget_pod.fragment);
+                    .paint(&mut inner_ctx, &mut widget_pod.fragment);
 
                 if parent_ctx.debug_paint {
                     widget_pod.debug_paint_layout_bounds(widget_pod.state.size);

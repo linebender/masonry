@@ -119,7 +119,7 @@ pub mod debug_values;
 pub use action::Action;
 pub use box_constraints::BoxConstraints;
 pub use contexts::{EventCtx, LayoutCtx, LifeCycleCtx, PaintCtx, WidgetCtx};
-pub use event::{InternalLifeCycle, LifeCycle, StatusChange, WindowTheme};
+pub use event::{InternalLifeCycle, LifeCycle, PointerEvent, StatusChange, TextEvent, WindowTheme};
 pub use kurbo::{Affine, Insets, Point, Rect, Size, Vec2};
 pub use util::{AsAny, Handled};
 pub use vello::peniko::{Color, Gradient};

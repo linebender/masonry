@@ -8,25 +8,22 @@ use std::collections::HashMap;
 use tracing::trace;
 
 use crate::action::Action;
-use crate::command::{Command, CommandQueue};
 use crate::ext_event::{ExtEventQueue, ExtEventSink};
 use crate::widget::{StoreInWidgetMut, WidgetMut, WidgetRef};
-use crate::{
-    Event, Handled, SingleUse, Target, Widget, WidgetId, WindowDescription, WindowId, WindowRoot,
-};
+use crate::{Event, Handled, Widget, WidgetId, WindowDescription, WindowId, WindowRoot};
 
 /// A context provided to [`AppDelegate`] methods.
-pub struct DelegateCtx<'a, 'b> {
+pub struct DelegateCtx<'a> {
     //pub(crate) command_queue: &'a mut CommandQueue,
     pub(crate) ext_event_queue: &'a ExtEventQueue,
     // FIXME - Ideally, we'd like to get a hashmap of all root widgets,
     // but that creates "aliasing mutable references" problems
     // See issue #17
-    pub(crate) main_root_widget: WidgetMut<'a, 'b, Box<dyn Widget>>,
+    pub(crate) main_root_widget: WidgetMut<'a, Box<dyn Widget>>,
     //pub(crate) active_windows: &'a mut HashMap<WindowId, WindowRoot>,
 }
 
-impl<'a, 'b> DelegateCtx<'a, 'b> {
+impl<'a> DelegateCtx<'a> {
     #[cfg(FALSE)]
     pub fn submit_command(&mut self, command: impl Into<Command>) {
         self.command_queue
@@ -53,7 +50,7 @@ impl<'a, 'b> DelegateCtx<'a, 'b> {
     /// Try to return a [`WidgetMut`] to the root widget.
     ///
     /// Returns null if the returned type doesn't match the root widget type.
-    pub fn try_get_root<W: Widget + StoreInWidgetMut>(&mut self) -> Option<WidgetMut<'_, 'b, W>> {
+    pub fn try_get_root<W: Widget + StoreInWidgetMut>(&mut self) -> Option<WidgetMut<'_, W>> {
         self.main_root_widget.downcast()
     }
 
@@ -62,7 +59,7 @@ impl<'a, 'b> DelegateCtx<'a, 'b> {
     /// ## Panics
     ///
     /// Panics if the returned type doesn't match the root widget type.
-    pub fn get_root<W: Widget + StoreInWidgetMut>(&mut self) -> WidgetMut<'_, 'b, W> {
+    pub fn get_root<W: Widget + StoreInWidgetMut>(&mut self) -> WidgetMut<'_, W> {
         self.main_root_widget.downcast().expect("wrong widget type")
     }
 }
@@ -77,15 +74,6 @@ pub trait AppDelegate {
     /// This function receives all non-command events, before they are passed down
     /// the tree. If it returns [`Handled::Yes`], events are short-circuited.
     fn on_event(&mut self, ctx: &mut DelegateCtx, window_id: WindowId, event: &Event) -> Handled {
-        #![allow(unused)]
-        Handled::No
-    }
-
-    /// The handler for [`Command`]s.
-    ///
-    /// This function receives all command events, before they are passed down
-    /// the tree. If it returns [`Handled::Yes`], commands are short-circuited.
-    fn on_command(&mut self, ctx: &mut DelegateCtx, cmd: &Command) -> Handled {
         #![allow(unused)]
         Handled::No
     }
