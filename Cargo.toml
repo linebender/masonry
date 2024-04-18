@@ -56,4 +56,4 @@ open = "1.6"
 
 [[example]]
 name = "simple_image"
-required-features = ["image", "png"]
+#required-features = ["image", "png"]
