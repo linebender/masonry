@@ -2,6 +2,7 @@
 // "as-is" basis without warranties of any kind. See the LICENSE file for
 // details.
 
+use assert_matches::assert_matches;
 use winit::event::MouseButton;
 
 use crate::event::{PointerEvent, PointerState};
@@ -32,7 +33,7 @@ fn propagate_hot() {
     let button_rec = Recording::default();
 
     let widget = Flex::column()
-        .with_child_id(SizedBox::empty().width(10.0).height(10.0), dbg!(empty))
+        .with_child_id(SizedBox::empty().width(10.0).height(10.0), empty)
         .with_child_id(
             Flex::column()
                 .with_spacer(100.0)
@@ -63,6 +64,9 @@ fn propagate_hot() {
 
     dbg!(harness.get_widget(empty).state().layout_rect());
 
+    eprintln!("root: {root:?}");
+    eprintln!("empty: {empty:?}");
+    eprintln!("pad: {pad:?}");
     assert!(is_hot(&harness, root));
     assert!(is_hot(&harness, empty));
     assert!(!is_hot(&harness, pad));
@@ -225,23 +229,22 @@ fn get_pointer_events_while_active() {
     assert!(!harness.get_widget(empty).state().is_active);
     assert!(!harness.get_widget(root).state().has_active);
 
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(next_pointer_event(&button_rec), None);
 
     // We press the button
 
     harness.mouse_move_to(button);
     harness.mouse_button_press(MouseButton::Left);
 
-    // TODO - Use assert_matches
-    assert!(matches!(
-        next_pointer_event(&button_rec).unwrap(),
-        PointerEvent::PointerMove(_)
-    ));
-    assert!(matches!(
-        next_pointer_event(&button_rec).unwrap(),
-        PointerEvent::PointerDown(_, _)
-    ));
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(
+        next_pointer_event(&button_rec),
+        Some(PointerEvent::PointerMove(_))
+    );
+    assert_matches!(
+        next_pointer_event(&button_rec),
+        Some(PointerEvent::PointerDown(_, _))
+    );
+    assert_matches!(next_pointer_event(&button_rec), None);
 
     assert!(harness.get_widget(button).state().is_active);
     assert!(!harness.get_widget(empty).state().is_active);
@@ -253,11 +256,11 @@ fn get_pointer_events_while_active() {
 
     harness.mouse_move_to(empty);
 
-    assert!(matches!(
-        next_pointer_event(&button_rec).unwrap(),
-        PointerEvent::PointerMove(_)
-    ));
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(
+        next_pointer_event(&button_rec),
+        Some(PointerEvent::PointerMove(_))
+    );
+    assert_matches!(next_pointer_event(&button_rec), None);
 
     assert!(harness.get_widget(button).state().is_active);
     assert!(!harness.get_widget(empty).state().is_active);
@@ -267,21 +270,21 @@ fn get_pointer_events_while_active() {
 
     harness.mouse_wheel(Vec2::ZERO);
 
-    assert!(matches!(
-        next_pointer_event(&button_rec).unwrap(),
-        PointerEvent::MouseWheel(_, _)
-    ));
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(
+        next_pointer_event(&button_rec),
+        Some(PointerEvent::MouseWheel(_, _))
+    );
+    assert_matches!(next_pointer_event(&button_rec), None);
 
     // We release the button
 
     harness.mouse_button_release(MouseButton::Left);
 
-    assert!(matches!(
-        next_pointer_event(&button_rec).unwrap(),
-        PointerEvent::PointerUp(_, _)
-    ));
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(
+        next_pointer_event(&button_rec),
+        Some(PointerEvent::PointerUp(_, _))
+    );
+    assert_matches!(next_pointer_event(&button_rec), None);
 
     assert!(!harness.get_widget(button).state().is_active);
     assert!(!harness.get_widget(empty).state().is_active);
@@ -289,5 +292,5 @@ fn get_pointer_events_while_active() {
 
     // We move the mouse again to check movements aren't captured anymore
     harness.mouse_move_to(empty_2);
-    assert!(next_pointer_event(&button_rec).is_none());
+    assert_matches!(next_pointer_event(&button_rec), None);
 }

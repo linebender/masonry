@@ -656,7 +656,6 @@ impl LayoutCtx<'_> {
     pub fn place_child(&mut self, child: &mut WidgetPod<impl Widget>, origin: Point) {
         child.state.origin = origin;
         child.state.is_expecting_place_child_call = false;
-        let layout_rect = child.layout_rect();
 
         self.widget_state.local_paint_rect =
             self.widget_state.local_paint_rect.union(child.paint_rect());
@@ -670,7 +669,6 @@ impl LayoutCtx<'_> {
             &mut child.inner,
             &mut child.state,
             self.global_state,
-            layout_rect,
             mouse_pos,
         ) {
             self.widget_state.merge_up(&mut child.state);

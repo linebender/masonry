@@ -174,19 +174,6 @@ impl TestHarness {
         let mouse_state = PointerState::empty();
         let window_size = PhysicalSize::new(window_size.width as _, window_size.height as _);
 
-        {
-            use tracing_subscriber::prelude::*;
-            let filter_layer = tracing_subscriber::filter::LevelFilter::TRACE;
-            let fmt_layer = tracing_subscriber::fmt::layer()
-                // Display target (eg "my_crate::some_mod::submod") with logs
-                .with_target(true);
-
-            tracing_subscriber::registry()
-                .with(filter_layer)
-                .with(fmt_layer)
-                .init();
-        }
-
         let mut harness = TestHarness {
             render_root: RenderRoot::new(root_widget, WindowSizePolicy::User),
             mouse_state,
@@ -344,7 +331,7 @@ impl TestHarness {
         // FIXME - Account for scaling
         let pos = pos.into();
         let pos = PhysicalPosition::new(pos.x, pos.y);
-        self.mouse_state.position = pos;
+        self.mouse_state.position = dbg!(pos);
 
         self.process_pointer_event(PointerEvent::PointerMove(self.mouse_state.clone()));
     }

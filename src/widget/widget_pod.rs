@@ -232,9 +232,9 @@ impl<W: Widget> WidgetPod<W> {
         inner: &mut W,
         inner_state: &mut WidgetState,
         global_state: &mut RenderRootState,
-        rect: Rect,
         mouse_pos: Option<PhysicalPosition<f64>>,
     ) -> bool {
+        let rect = inner_state.layout_rect() + inner_state.parent_window_origin.to_vec2();
         let had_hot = inner_state.is_hot;
         inner_state.is_hot = match mouse_pos {
             Some(pos) => rect.winding(Point::new(pos.x, pos.y)) != 0,
@@ -355,6 +355,12 @@ impl<W: Widget> WidgetPod<W> {
         self.mark_as_visited();
         self.check_initialized("on_pointer_event");
 
+        trace!(
+            "Widget '{}' #{} visited",
+            self.inner.short_type_name(),
+            self.state.id.to_raw(),
+        );
+
         if parent_ctx.is_handled {
             parent_ctx.global_state.debug_logger.pop_span();
             // If the event was already handled, we quit early.
@@ -362,7 +368,6 @@ impl<W: Widget> WidgetPod<W> {
         }
 
         let had_active = self.state.has_active;
-        let rect = self.layout_rect() + self.state.window_origin().to_vec2();
 
         // TODO - This doesn't handle the case where multiple cursors
         // are over the same widget
@@ -381,10 +386,10 @@ impl<W: Widget> WidgetPod<W> {
             &mut self.inner,
             &mut self.state,
             parent_ctx.global_state,
-            rect,
             hot_pos,
         );
         let call_inner = (had_active || self.state.is_hot || hot_changed) && !self.state.is_stashed;
+        //let call_inner = true;
 
         if call_inner {
             self.call_widget_method_with_checks("on_pointer_event", |widget_pod| {
