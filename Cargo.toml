@@ -20,6 +20,9 @@ default-target = "x86_64-pc-windows-msvc"
 features = ["im"]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[profile.dev.package."*"]
+opt-level = 2
+
 # NOTE: Make sure to keep wgpu version in sync with the version badge in README.md
 [dependencies]
 fnv = "1.0.7"
@@ -35,7 +38,7 @@ vello = { git = "https://github.com/linebender/vello/", rev = "b520a35addfa6bbb3
 kurbo = "0.11.0"
 futures-intrusive = "0.5.0"
 pollster = "0.3.0"
-parley = { git = "https://github.com/dfrg/parley", rev = "4e6109f2ff5847a72dc77971b6fa0942b8474d88" }
+parley = { git = "https://github.com/linebender/parley", rev = "4f05e183be9b388c6748d3c531c9ac332672fb86" }
 wgpu = { version = "0.19.3" }
 swash = "0.1.15"
 winit = "0.29.15"
