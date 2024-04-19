@@ -109,9 +109,7 @@ impl EventLoopRunner {
                     WinitWindowEvent::MouseWheel { delta, .. } => {
                         let delta = match delta {
                             winit::event::MouseScrollDelta::LineDelta(x, y) => (x as f64, y as f64),
-                            winit::event::MouseScrollDelta::PixelDelta(delta) => {
-                                (delta.x as f64, delta.y as f64)
-                            }
+                            winit::event::MouseScrollDelta::PixelDelta(delta) => (delta.x, delta.y),
                         };
                         let delta = PhysicalPosition::new(delta.0, delta.1);
                         render_root.handle_pointer_event(PointerEvent::MouseWheel(
