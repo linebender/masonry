@@ -501,15 +501,19 @@ impl TestHarness {
         test_module_path: &str,
         test_name: &str,
     ) {
-        let new_image = self.render();
-
         if option_env!("SKIP_RENDER_SNAPSHOTS").is_some() {
             // FIXME - This is a terrible, awful hack.
             // We need a way to skip render snapshots on CI and locally
             // until we can make sure the snapshots render the same on
             // different platforms.
+
+            // We still redraw to get some coverage in the paint code.
+            let _ = self.render_root.redraw();
+
             return;
         }
+
+        let new_image = self.render();
 
         let workspace_path = get_cargo_workspace(manifest_dir);
         let test_file_path_abs = workspace_path.join(test_file_path);
