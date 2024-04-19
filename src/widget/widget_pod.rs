@@ -791,10 +791,6 @@ impl<W: Widget> WidgetPod<W> {
 
         bc.debug_check(self.inner.short_type_name());
 
-        let inner_mouse_pos = parent_ctx
-            .mouse_pos
-            .map(|pos| pos - self.layout_rect().origin().to_vec2());
-
         self.state.local_paint_rect = Rect::ZERO;
 
         let new_size = self.call_widget_method_with_checks("layout", |widget_pod| {
@@ -803,7 +799,7 @@ impl<W: Widget> WidgetPod<W> {
             let mut inner_ctx = LayoutCtx {
                 widget_state: &mut widget_pod.state,
                 global_state: parent_ctx.global_state,
-                mouse_pos: inner_mouse_pos,
+                mouse_pos: parent_ctx.mouse_pos,
             };
 
             widget_pod.inner.layout(&mut inner_ctx, bc)
