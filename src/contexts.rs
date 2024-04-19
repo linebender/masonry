@@ -7,6 +7,7 @@
 use std::any::Any;
 use std::time::Duration;
 
+use parley::FontContext;
 use tracing::{trace, warn};
 use winit::dpi::PhysicalPosition;
 use winit::window::CursorIcon;
@@ -675,6 +676,12 @@ impl LayoutCtx<'_> {
         }
     }
 }
+
+impl_context_method!(LayoutCtx<'_>, PaintCtx<'_>, {
+    pub fn font_ctx(&mut self) -> &mut FontContext {
+        &mut self.global_state.font_context
+    }
+});
 
 impl PaintCtx<'_> {
     /// The depth in the tree of the currently painting widget.

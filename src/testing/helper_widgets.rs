@@ -67,7 +67,7 @@ pub struct ReplaceChild {
 /// let widget = Label::new("Hello").record(&recording);
 ///
 /// TestHarness::create(widget);
-/// assert!(matches!(recording.next(), Record::L(LifeCycle::WidgetAdded)));
+/// assert!(matches!(recording.next().unwrap(), Record::L(LifeCycle::WidgetAdded)));
 /// ```
 pub struct Recorder<W> {
     recording: Recording,

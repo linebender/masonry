@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 // Automatically defaults to std::time::Instant on non Wasm platforms
 use instant::Instant;
 use kurbo::Affine;
+use parley::FontContext;
 use tracing::{info_span, warn};
 use vello::peniko::{Color, Fill};
 use vello::Scene;
@@ -37,6 +38,7 @@ pub(crate) struct RenderRootState {
     pub(crate) debug_logger: DebugLogger,
     pub(crate) signal_queue: VecDeque<RenderRootSignal>,
     pub(crate) focused_widget: Option<WidgetId>,
+    pub(crate) font_context: FontContext,
 }
 
 /// Defines how a windows size should be determined
@@ -86,6 +88,7 @@ impl RenderRoot {
                 debug_logger: DebugLogger::new(false),
                 signal_queue: VecDeque::new(),
                 focused_widget: None,
+                font_context: FontContext::default(),
             },
         };
 
@@ -409,6 +412,12 @@ impl RenderRoot {
             self.state
                 .signal_queue
                 .push_back(RenderRootSignal::RequestAnimFrame);
+        }
+
+        if self.root.state().needs_paint {
+            self.state
+                .signal_queue
+                .push_back(RenderRootSignal::RequestRedraw);
         }
 
         #[cfg(FALSE)]

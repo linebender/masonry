@@ -201,7 +201,7 @@ impl Widget for Label {
         }
     }
 
-    fn layout(&mut self, _ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
+    fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints) -> Size {
         // Compute max_advance from box constraints
         let max_advance = if self.line_break_mode != LineBreaking::WordWrap {
             None
@@ -213,14 +213,11 @@ impl Widget for Label {
             None
         };
 
-        // FIXME
-        let font_cx = &mut FontContext::default();
-
         // TODO - Handle baseline
 
         // Lay text out
         let alignment = self.alignment;
-        let layout = self.get_layout_mut(font_cx);
+        let layout = self.get_layout_mut(ctx.font_ctx());
         layout.break_all_lines(max_advance, alignment);
         let size = Size {
             width: layout.width() as f64 + 2. * LABEL_X_PADDING,

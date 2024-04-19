@@ -9,18 +9,28 @@
 #![windows_subsystem = "windows"]
 
 use kurbo::Stroke;
+use masonry::app_driver::{AppDriver, DriverCtx};
+use masonry::event_loop_runner::EventLoopRunner;
 use masonry::kurbo::BezPath;
 use masonry::widget::{FillStrat, WidgetRef};
 use masonry::{
-    Affine, AppLauncher, BoxConstraints, Color, Event, EventCtx, LayoutCtx, LifeCycle,
-    LifeCycleCtx, PaintCtx, Point, Rect, Size, StatusChange, Widget, WindowDescription,
+    Action, Affine, BoxConstraints, Color, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
+    Point, PointerEvent, Rect, Size, StatusChange, TextEvent, Widget, WidgetId,
 };
+use parley::layout::Alignment;
 use parley::style::{FontFamily, FontStack, StyleProperty};
-use parley::FontContext;
 use smallvec::SmallVec;
 use tracing::{trace_span, Span};
 use vello::peniko::{Brush, Fill, Format, Image};
 use vello::Scene;
+use winit::event_loop::EventLoop;
+use winit::window::WindowBuilder;
+
+struct Driver;
+
+impl AppDriver for Driver {
+    fn on_action(&mut self, _ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, _action: Action) {}
+}
 
 struct CustomWidget(String);
 
@@ -28,7 +38,9 @@ struct CustomWidget(String);
 // (and lifecycle) methods as well to make sure it works. Some things can be filtered,
 // but a general rule is to just pass it through unless you really know you don't want it.
 impl Widget for CustomWidget {
-    fn on_event(&mut self, _ctx: &mut EventCtx, _event: &Event) {}
+    fn on_pointer_event(&mut self, _ctx: &mut EventCtx, _event: &PointerEvent) {}
+
+    fn on_text_event(&mut self, _ctx: &mut EventCtx, _event: &TextEvent) {}
 
     fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle) {}
 
@@ -69,7 +81,7 @@ impl Widget for CustomWidget {
         // Create an arbitrary bezier path
         let mut path = BezPath::new();
         path.move_to(Point::ORIGIN);
-        path.quad_to((40.0, 50.0), (size.width, size.height));
+        path.quad_to((60.0, 120.0), (size.width, size.height));
         // Create a color
         let stroke_color = Color::rgb8(0, 128, 0);
         // Stroke the path with thickness 5.0
@@ -88,10 +100,8 @@ impl Widget for CustomWidget {
         scene.fill(Fill::NonZero, Affine::IDENTITY, fill_color, None, &rect);
 
         // To render text, we first create a LayoutBuilder and set the text properties.
-        // FIXME
-        let mut font_cx = FontContext::default();
         let mut lcx = parley::LayoutContext::new();
-        let mut text_layout_builder = lcx.ranged_builder(&mut font_cx, &self.0, 1.0);
+        let mut text_layout_builder = lcx.ranged_builder(ctx.font_ctx(), &self.0, 1.0);
 
         text_layout_builder.push_default(&StyleProperty::FontStack(FontStack::Single(
             FontFamily::Generic(parley::style::GenericFamily::Serif),
@@ -99,7 +109,8 @@ impl Widget for CustomWidget {
         text_layout_builder.push_default(&StyleProperty::FontSize(24.0));
         text_layout_builder.push_default(&StyleProperty::Brush(Brush::Solid(fill_color)));
 
-        let text_layout = text_layout_builder.build();
+        let mut text_layout = text_layout_builder.build();
+        text_layout.break_all_lines(None, Alignment::Start);
 
         // We can pass a transform matrix to rotate the text we render
         masonry::text_helpers::render_text(
@@ -126,11 +137,14 @@ impl Widget for CustomWidget {
 
 pub fn main() {
     let my_string = "Masonry + Vello".to_string();
-    let window = WindowDescription::new(CustomWidget(my_string)).title("Fancy Colors");
-    AppLauncher::with_window(window)
-        .log_to_console()
-        .launch()
-        .expect("launch failed");
+    let event_loop = EventLoop::new().unwrap();
+    let window = WindowBuilder::new()
+        .with_title("Fancy colots")
+        .build(&event_loop)
+        .unwrap();
+
+    let runner = EventLoopRunner::new(CustomWidget(my_string), window, event_loop, Driver);
+    runner.run().unwrap();
 }
 
 fn make_image_data(width: usize, height: usize) -> Vec<u8> {

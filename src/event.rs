@@ -11,7 +11,7 @@ use crate::WidgetId;
 use std::{collections::HashSet, path::PathBuf};
 
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::event::{DeviceId, Ime, KeyEvent, Modifiers, MouseButton};
+use winit::event::{Ime, KeyEvent, Modifiers, MouseButton};
 use winit::keyboard::ModifiersState;
 
 // TODO - Occluded(bool) event
@@ -59,7 +59,8 @@ pub enum TextEvent {
 
 #[derive(Debug, Clone)]
 pub struct PointerState {
-    pub device_id: DeviceId,
+    // TODO
+    // pub device_id: DeviceId,
     pub position: PhysicalPosition<f64>,
     pub buttons: HashSet<MouseButton>,
     pub mods: Modifiers,
@@ -243,14 +244,16 @@ impl TextEvent {
 
 impl PointerState {
     pub fn empty() -> Self {
+        #[cfg(FALSE)]
         #[allow(unsafe_code)]
+        // SAFETY: Uuuuh, unclear. Winit says the dummy id should only be used in
+        // tests and should never be passed to winit. In principle, we're never
+        // passing this id to winit, but it's still visible to custom widgets which
+        // might do so if they tried really hard.
+        // It would be a lot better if winit could just make this constructor safe.
+        let device_id = unsafe { DeviceId::dummy() };
+
         PointerState {
-            // SAFETY: Uuuuh, unclear. Winit says the dummy id should only be used in
-            // tests and should never be passed to winit. In principle, we're never
-            // passing this id to winit, but it's still visible to custom widgets which
-            // might do so if they tried really hard.
-            // It would be a lot better if winit could just make this constructor safe.
-            device_id: unsafe { DeviceId::dummy() },
             position: PhysicalPosition::new(0.0, 0.0),
             buttons: Default::default(),
             mods: Default::default(),

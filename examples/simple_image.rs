@@ -9,9 +9,20 @@
 // On Windows platform, don't show a console when opening the app.
 #![windows_subsystem = "windows"]
 
+use masonry::app_driver::{AppDriver, DriverCtx};
+use masonry::event_loop_runner::EventLoopRunner;
 use masonry::widget::{FillStrat, Image};
-use masonry::{AppLauncher, WindowDescription};
+use masonry::{Action, WidgetId};
 use vello::peniko::{Format, Image as ImageBuf};
+use winit::dpi::LogicalSize;
+use winit::event_loop::EventLoop;
+use winit::window::WindowBuilder;
+
+struct Driver;
+
+impl AppDriver for Driver {
+    fn on_action(&mut self, _ctx: &mut DriverCtx<'_>, _widget_id: WidgetId, _action: Action) {}
+}
 
 pub fn main() {
     let image_bytes = include_bytes!("./assets/PicWithAlpha.png");
@@ -20,12 +31,15 @@ pub fn main() {
     let png_data = ImageBuf::new(image_data.to_vec().into(), Format::Rgba8, width, height);
     let image = Image::new(png_data).fill_mode(FillStrat::Contain);
 
-    let main_window = WindowDescription::new(image)
-        .window_size((650., 450.))
-        .title("Simple image example");
+    let event_loop = EventLoop::new().unwrap();
+    let window_size = LogicalSize::new(650.0, 450.0);
+    let window = WindowBuilder::new()
+        .with_title("Simple image example")
+        .with_min_inner_size(window_size)
+        .with_max_inner_size(window_size)
+        .build(&event_loop)
+        .unwrap();
 
-    AppLauncher::with_window(main_window)
-        .log_to_console()
-        .launch()
-        .expect("Failed to launch application");
+    let runner = EventLoopRunner::new(image, window, event_loop, Driver);
+    runner.run().unwrap();
 }
