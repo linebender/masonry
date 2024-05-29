@@ -1,4 +1,17 @@
+> [!INFO]
+> Masonry has been moved into the [Xilem](https://github.com/linebender/xilem/tree/main/masonry) repository.
+> It can be found in the `masonry` folder at the root in that repository, which in turn can be found at <https://github.com/linebender/xilem/>.
+> This repository may be useful for exploring the history of Masonry.
+>
+> The version of Masonry in that repository is now also [published](https://crates.io/crates/masonry) on crates.io.
+
 ## Masonry
+
+> [!WARNING]
+> **This README is outdated.**
+>
+> See the info box above for more details.
+> The previous README is included for historical reference.
 
 Masonry is a framework that aims to provide the foundation for Rust GUI libraries.
 
@@ -8,7 +21,7 @@ The framework is not opinionated about what your user-facing abstraction will be
 
 This project was originally a fork of [Druid](https://github.com/linebender/druid) that emerged from discussions I had with Raph Levien and Colin Rofls about what it would look like to turn Druid into a foundational library.
 
-## Installing
+<!-- ## Installing
 
 ```sh
 cargo add masonry
@@ -22,9 +35,10 @@ On Linux, Masonry requires gtk+3; see [GTK installation page](https://www.gtk.or
 ### OpenBSD
 
 On OpenBSD, Masonry requires gtk+3; install from packages:
+
 ```sh
 pkg_add gtk+3
-```
+``` -->
 
 ## Example
 
@@ -96,7 +110,6 @@ This simplicity makes Masonry somewhat painful if you want to use it to actually
 
 (Well, in theory. The first stress-test will be porting [Panoramix](https://github.com/PoignardAzur/panoramix), a React-style GUI in Rust, to Masonry.)
 
-
 ## Unit tests
 
 Masonry is designed to make unit tests easy to write, as if the test function were a mouse-and-keyboard user. Tests look like this:
@@ -136,9 +149,9 @@ fn some_test_with_a_button() {
 }
 ```
 
-## Contributing
+<!-- ## Contributing
 
-Issues and PRs are welcome. See [`help-wanted` issues](https://github.com/PoignardAzur/masonry-rs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) if you don't know where to begin.
+Issues and PRs are welcome. See [`help-wanted` issues](https://github.com/PoignardAzur/masonry-rs/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) if you don't know where to begin. -->
 
 ## Roadmap
 
