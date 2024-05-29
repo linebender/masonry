@@ -1,4 +1,4 @@
-> [!NOTE]
+> [!Important]
 > Masonry has been moved into the [Xilem](https://github.com/linebender/xilem/tree/main/masonry) repository.
 > It can be found in the `masonry` folder at the root in that repository, which in turn can be found at <https://github.com/linebender/xilem/>.
 > This repository may be useful for exploring the history of Masonry.
@@ -7,7 +7,7 @@
 
 ## Masonry
 
-> [!WARNING]
+> [!Caution]
 > **This README is outdated.**
 >
 > See the info box above for more details.
